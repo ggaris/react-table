@@ -68,6 +68,13 @@ bun run test:coverage   # 运行测试覆盖率
 
 ## 开发指南
 
+### commit 提交规则
+- 使用 conventional commits 格式
+- 示例: `feat: 添加新功能` 或 `fix: 修复 bug`
+- 详细说明请参考 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)
+- 适当使用emoji，如:green_heart: 修复 bug，:sparkles: 新功能，:bug: 修复 bug，:memo: 文档更新，:lipstick: 样式更新，:art: 代码重构，:zap: 性能优化，:truck: 代码迁移，:hammer: 代码格式化，:white_check_mark: 测试更新，:lock: 安全更新，:bookmark: 版本更新，:tada: 初次提交，在最前面加
+- 使用中英双语，并且分段，先中文，后英文
+
 ### 添加新组件
 1. 在 `src/components/` 下创建新组件文件
 2. 使用 TypeScript 编写，遵循现有命名约定
