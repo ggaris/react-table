@@ -20,6 +20,7 @@ import {
   type ColumnDef,
   type ColumnFiltersState,
   type ColumnOrderState,
+  type ColumnSizingState,
   type PaginationState,
   type SortingState,
   flexRender,
@@ -37,7 +38,10 @@ export interface PaaColumnDef<TData, TValue = unknown> {
   // TanStack Table 的核心字段 - 使用具体类型而非 any
   id?: string
   accessorKey?: keyof TData
-  header?: string | React.ReactNode | ((context: { column: { id: string } }) => React.ReactNode)
+  header?:
+    | string
+    | React.ReactNode
+    | ((context: { column: { id: string } }) => React.ReactNode)
   cell?: (context: { getValue: () => unknown }) => React.ReactNode
 
   // 我们扩展的字段
@@ -53,17 +57,22 @@ export interface PaaTableProps<TData> {
   enableFiltering?: boolean
   enablePagination?: boolean
   enableColumnDragging?: boolean
+  enableColumnResizing?: boolean
+  enableAutoFitColumns?: boolean
   pageSize?: number
   onColumnOrderChange?: (columnOrder: string[]) => void
+  onColumnSizingChange?: (columnSizing: ColumnSizingState) => void
 }
 
 // 可拖拽的表头单元格组件
 function DraggableTableHeader<TData>({
   header,
   enableSorting,
+  enableColumnResizing,
 }: {
   header: import('@tanstack/react-table').Header<TData, unknown>
   enableSorting: boolean
+  enableColumnResizing: boolean
 }) {
   const { attributes, isDragging, listeners, setNodeRef, transform } =
     useSortable({
@@ -76,13 +85,14 @@ function DraggableTableHeader<TData>({
     transform: CSS.Translate.toString(transform),
     transition: 'transform 150ms ease',
     zIndex: isDragging ? 1 : 0,
+    width: header.getSize(),
   }
 
   return (
     <th
       ref={setNodeRef}
       style={style}
-      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 bg-gray-50"
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 bg-gray-50 relative"
       {...attributes}
     >
       <div className="flex items-center">
@@ -119,8 +129,103 @@ function DraggableTableHeader<TData>({
           </div>
         </div>
       </div>
+      {/* 列宽调整手柄 */}
+      {enableColumnResizing && header.column.getCanResize() && (
+        <div
+          {...{
+            onMouseDown: header.getResizeHandler(),
+            onTouchStart: header.getResizeHandler(),
+            className: `resize-handle ${
+              header.column.getIsResizing() ? 'is-resizing' : ''
+            }`,
+          }}
+        />
+      )}
     </th>
   )
+}
+
+// 普通表头单元格组件
+function TableHeader<TData>({
+  header,
+  enableSorting,
+  enableColumnResizing,
+}: {
+  header: import('@tanstack/react-table').Header<TData, unknown>
+  enableSorting: boolean
+  enableColumnResizing: boolean
+}) {
+  return (
+    <th
+      key={header.id}
+      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200 relative"
+      style={{
+        width: header.getSize(),
+      }}
+    >
+      {header.isPlaceholder ? null : (
+        <div
+          className={
+            header.column.getCanSort()
+              ? 'cursor-pointer select-none flex items-center'
+              : ''
+          }
+          onClick={header.column.getToggleSortingHandler()}
+          onKeyDown={header.column.getToggleSortingHandler()}
+        >
+          {flexRender(header.column.columnDef.header, header.getContext())}
+          {enableSorting && header.column.getCanSort() && (
+            <span className="ml-2">
+              {{
+                asc: '↑',
+                desc: '↓',
+              }[header.column.getIsSorted() as string] ?? '↕'}
+            </span>
+          )}
+        </div>
+      )}
+      {/* 列宽调整手柄 */}
+      {enableColumnResizing && header.column.getCanResize() && (
+        <div
+          {...{
+            onMouseDown: header.getResizeHandler(),
+            onTouchStart: header.getResizeHandler(),
+            className: `resize-handle ${
+              header.column.getIsResizing() ? 'is-resizing' : ''
+            }`,
+          }}
+        />
+      )}
+    </th>
+  )
+}
+
+// 计算列的自适应宽度
+function calculateColumnWidth<TData>(
+  header: import('@tanstack/react-table').Header<TData, unknown>,
+  rows: import('@tanstack/react-table').Row<TData>[]
+): number {
+  let maxWidth = 80 // 基础最小宽度
+
+  // 计算表头宽度（更精确的计算）
+  const headerText = header.column.columnDef.header?.toString() || ''
+  const headerWidth = Math.max(headerText.length * 9 + 60, 120) // 9px per character + padding + sort icon space
+  maxWidth = Math.max(maxWidth, headerWidth)
+
+  // 计算内容宽度
+  for (const row of rows) {
+    const cell = row
+      .getVisibleCells()
+      .find((c) => c.column.id === header.column.id)
+    if (cell) {
+      const cellValue = cell.getValue()?.toString() || ''
+      const contentWidth = cellValue.length * 8 + 48 // 8px per character + padding
+      maxWidth = Math.max(maxWidth, contentWidth)
+    }
+  }
+
+  // 限制最大宽度
+  return Math.min(maxWidth, 400)
 }
 
 function PaaTable<TData>({
@@ -131,8 +236,11 @@ function PaaTable<TData>({
   enableFiltering = true,
   enablePagination = true,
   enableColumnDragging = true,
+  enableColumnResizing = true,
+  enableAutoFitColumns = true,
   pageSize = 10,
   onColumnOrderChange,
+  onColumnSizingChange,
 }: PaaTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -145,6 +253,7 @@ function PaaTable<TData>({
   const [columnOrder, setColumnOrder] = React.useState<ColumnOrderState>(
     columns.map((column) => column.id || (column.accessorKey as string) || '')
   )
+  const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>({})
 
   // 配置拖拽传感器
   const sensors = useSensors(
@@ -164,26 +273,56 @@ function PaaTable<TData>({
     })
   )
 
+  // 为每列计算最小宽度
+  const columnsWithMinSize = React.useMemo(() => {
+    return (columns as ColumnDef<TData, unknown>[]).map((column) => {
+      // 计算表头文本的最小宽度
+      const headerText = column.header?.toString?.() || column.id || ''
+      const minHeaderWidth = Math.max(headerText.length * 9 + 80, 120) // 考虑排序图标和内边距
+
+      return {
+        ...column,
+        minSize: minHeaderWidth,
+        maxSize: 800,
+      }
+    })
+  }, [columns])
+
   const table = useReactTable<TData>({
     data,
-    // 使用类型断言将 PaaColumnDef 转换为 ColumnDef，因为 PaaColumnDef 是 ColumnDef 的扩展
-    columns: columns as ColumnDef<TData, unknown>[],
+    columns: columnsWithMinSize,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
     getFilteredRowModel: enableFiltering ? getFilteredRowModel() : undefined,
     getPaginationRowModel: enablePagination
       ? getPaginationRowModel()
       : undefined,
+    enableColumnResizing: enableColumnResizing,
+    columnResizeMode: 'onChange',
+    // 设置默认列属性
+    defaultColumn: {
+      minSize: 120, // 最小宽度为表头内容所需宽度
+      maxSize: 800, // 设置合理的最大宽度
+    },
     state: {
       sorting: enableSorting ? sorting : undefined,
       columnFilters: enableFiltering ? columnFilters : undefined,
       pagination: enablePagination ? pagination : undefined,
       columnOrder: enableColumnDragging ? columnOrder : undefined,
+      columnSizing: enableColumnResizing ? columnSizing : undefined,
     },
     onSortingChange: enableSorting ? setSorting : undefined,
     onColumnFiltersChange: enableFiltering ? setColumnFilters : undefined,
     onPaginationChange: enablePagination ? setPagination : undefined,
     onColumnOrderChange: enableColumnDragging ? setColumnOrder : undefined,
+    onColumnSizingChange: enableColumnResizing
+      ? (updater) => {
+          const newSizing =
+            typeof updater === 'function' ? updater(columnSizing) : updater
+          setColumnSizing(newSizing)
+          onColumnSizingChange?.(newSizing)
+        }
+      : undefined,
   })
 
   // 处理列拖拽结束事件
@@ -200,10 +339,46 @@ function PaaTable<TData>({
     }
   }
 
+  // 一键自适应列宽
+  const handleAutoFitColumns = React.useCallback(() => {
+    const headers = table.getHeaderGroups()[0]?.headers || []
+    const newSizing: ColumnSizingState = {}
+    const rows = table.getRowModel().rows
+
+    for (const header of headers) {
+      const columnId = header.column.id
+      // 只对没有手动设置宽度的列进行自适应
+      if (!columnSizing[columnId]) {
+        newSizing[columnId] = calculateColumnWidth(header, rows)
+      }
+    }
+
+    setColumnSizing((prev) => ({ ...prev, ...newSizing }))
+    onColumnSizingChange?.({ ...columnSizing, ...newSizing })
+  }, [table, columnSizing, onColumnSizingChange])
+
   const tableContent = (
     <div className={`paa-table-container ${className}`}>
+      {/* 工具栏 */}
+      {enableAutoFitColumns && (
+        <div className="flex justify-end mb-4">
+          <button
+            type="button"
+            onClick={handleAutoFitColumns}
+            className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            自适应列宽
+          </button>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
-        <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+        <table
+          className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm"
+          style={{
+            width: table.getCenterTotalSize(),
+          }}
+        >
           <thead className="bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
@@ -217,40 +392,18 @@ function PaaTable<TData>({
                         key={header.id}
                         header={header}
                         enableSorting={enableSorting}
+                        enableColumnResizing={enableColumnResizing}
                       />
                     ))}
                   </SortableContext>
                 ) : (
                   headerGroup.headers.map((header) => (
-                    <th
+                    <TableHeader
                       key={header.id}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200"
-                    >
-                      {header.isPlaceholder ? null : (
-                        <div
-                          className={
-                            header.column.getCanSort()
-                              ? 'cursor-pointer select-none flex items-center'
-                              : ''
-                          }
-                          onClick={header.column.getToggleSortingHandler()}
-                          onKeyDown={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                          {enableSorting && header.column.getCanSort() && (
-                            <span className="ml-2">
-                              {{
-                                asc: '↑',
-                                desc: '↓',
-                              }[header.column.getIsSorted() as string] ?? '↕'}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </th>
+                      header={header}
+                      enableSorting={enableSorting}
+                      enableColumnResizing={enableColumnResizing}
+                    />
                   ))
                 )}
               </tr>
@@ -267,6 +420,9 @@ function PaaTable<TData>({
                     <td
                       key={cell.id}
                       className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                      style={{
+                        width: cell.column.getSize(),
+                      }}
                     >
                       {column.valueType ? (
                         <ValueTypeRenderer

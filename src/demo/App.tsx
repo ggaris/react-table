@@ -55,7 +55,7 @@ const generateMockData = (count: number): Person[] => {
   const departments = ['技术部', '市场部', '销售部', '人事部', '财务部']
   const names = [
     '张三',
-    '李四',
+    '李四33333333333',
     '王五',
     '赵六',
     '钱七',
