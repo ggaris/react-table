@@ -34,7 +34,7 @@ import React from 'react'
 import { type ValueType, ValueTypeRenderer } from './ValueTypeRenderer'
 
 // 扩展 ColumnDef 类型，添加 valueType 支持 - 使用交集类型避免类型冲突
-export interface PaaColumnDef<TData, TValue = unknown> {
+export interface ReactTableColumnDef<TData, TValue = unknown> {
   // TanStack Table 的核心字段 - 使用具体类型而非 any
   id?: string
   accessorKey?: keyof TData
@@ -49,9 +49,9 @@ export interface PaaColumnDef<TData, TValue = unknown> {
   valueTypeOptions?: Array<{ label: string; value: TValue }>
 }
 
-export interface PaaTableProps<TData> {
+export interface ReactTableProps<TData> {
   data: TData[]
-  columns: PaaColumnDef<TData, unknown>[]
+  columns: ReactTableColumnDef<TData, unknown>[]
   className?: string
   enableSorting?: boolean
   enableFiltering?: boolean
@@ -200,35 +200,7 @@ function TableHeader<TData>({
   )
 }
 
-// 计算列的自适应宽度
-function calculateColumnWidth<TData>(
-  header: import('@tanstack/react-table').Header<TData, unknown>,
-  rows: import('@tanstack/react-table').Row<TData>[]
-): number {
-  let maxWidth = 80 // 基础最小宽度
-
-  // 计算表头宽度（更精确的计算）
-  const headerText = header.column.columnDef.header?.toString() || ''
-  const headerWidth = Math.max(headerText.length * 9 + 60, 120) // 9px per character + padding + sort icon space
-  maxWidth = Math.max(maxWidth, headerWidth)
-
-  // 计算内容宽度
-  for (const row of rows) {
-    const cell = row
-      .getVisibleCells()
-      .find((c) => c.column.id === header.column.id)
-    if (cell) {
-      const cellValue = cell.getValue()?.toString() || ''
-      const contentWidth = cellValue.length * 8 + 48 // 8px per character + padding
-      maxWidth = Math.max(maxWidth, contentWidth)
-    }
-  }
-
-  // 限制最大宽度
-  return Math.min(maxWidth, 400)
-}
-
-function PaaTable<TData>({
+function ReactTable<TData>({
   data,
   columns,
   className = '',
@@ -241,7 +213,7 @@ function PaaTable<TData>({
   pageSize = 10,
   onColumnOrderChange,
   onColumnSizingChange,
-}: PaaTableProps<TData>) {
+}: ReactTableProps<TData>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -273,17 +245,19 @@ function PaaTable<TData>({
     })
   )
 
-  // 为每列计算最小宽度
+  // 为每列计算基于内容的最小宽度
   const columnsWithMinSize = React.useMemo(() => {
     return (columns as ColumnDef<TData, unknown>[]).map((column) => {
       // 计算表头文本的最小宽度
       const headerText = column.header?.toString?.() || column.id || ''
-      const minHeaderWidth = Math.max(headerText.length * 9 + 80, 120) // 考虑排序图标和内边距
+      const minHeaderWidth = Math.max(headerText.length * 8 + 60, 100) // 更紧凑的计算
 
       return {
         ...column,
         minSize: minHeaderWidth,
         maxSize: 800,
+        // 设置初始尺寸为最小尺寸，让内容决定实际宽度
+        size: minHeaderWidth,
       }
     })
   }, [columns])
@@ -301,8 +275,9 @@ function PaaTable<TData>({
     columnResizeMode: 'onChange',
     // 设置默认列属性
     defaultColumn: {
-      minSize: 120, // 最小宽度为表头内容所需宽度
-      maxSize: 800, // 设置合理的最大宽度
+      minSize: 80, // 更紧凑的最小宽度
+      maxSize: 300, // 限制最大宽度，避免过宽
+      size: 100, // 默认初始宽度
     },
     state: {
       sorting: enableSorting ? sorting : undefined,
@@ -339,20 +314,22 @@ function PaaTable<TData>({
     }
   }
 
-  // 一键自适应列宽
+  // 一键自适应列宽 - 使用 TanStack Table 内置功能
   const handleAutoFitColumns = React.useCallback(() => {
-    const headers = table.getHeaderGroups()[0]?.headers || []
     const newSizing: ColumnSizingState = {}
-    const rows = table.getRowModel().rows
+    const headers = table.getHeaderGroups()[0]?.headers || []
 
     for (const header of headers) {
       const columnId = header.column.id
       // 只对没有手动设置宽度的列进行自适应
       if (!columnSizing[columnId]) {
-        newSizing[columnId] = calculateColumnWidth(header, rows)
+        // 设置为列定义中的最小尺寸，让表格自动调整到合适的宽度
+        const columnDef = header.column.columnDef
+        newSizing[columnId] = columnDef.minSize || columnDef.size || 100
       }
     }
 
+    // 通过 TanStack Table 的状态管理系统更新列宽
     setColumnSizing((prev) => ({ ...prev, ...newSizing }))
     onColumnSizingChange?.({ ...columnSizing, ...newSizing })
   }, [table, columnSizing, onColumnSizingChange])
@@ -367,7 +344,7 @@ function PaaTable<TData>({
             onClick={handleAutoFitColumns}
             className="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-md hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
-            自适应列宽
+            自适应最小宽度
           </button>
         </div>
       )}
@@ -413,7 +390,8 @@ function PaaTable<TData>({
             {table.getRowModel().rows.map((row) => (
               <tr key={row.id} className="hover:bg-gray-50">
                 {row.getVisibleCells().map((cell) => {
-                  const column = cell.column.columnDef as PaaColumnDef<TData>
+                  const column = cell.column
+                    .columnDef as ReactTableColumnDef<TData>
                   const cellValue = cell.getValue()
 
                   return (
@@ -507,4 +485,4 @@ function PaaTable<TData>({
   return tableContent
 }
 
-export default PaaTable
+export default ReactTable

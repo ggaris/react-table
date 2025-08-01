@@ -1,7 +1,10 @@
 import './index.css'
 
-export { default as PaaTable } from './components/PaaTable'
-export type { PaaTableProps, PaaColumnDef } from './components/PaaTable'
+export { default as ReactTable } from './components/ReactTable'
+export type {
+  ReactTableProps,
+  ReactTableColumnDef,
+} from './components/ReactTable'
 export type { ColumnSizingState } from '@tanstack/react-table'
 export {
   ValueTypeRenderer,
