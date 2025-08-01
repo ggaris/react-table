@@ -101,6 +101,7 @@ const RateDisplay: React.FC<{ value: number; max?: number }> = ({
     <div className="flex items-center space-x-1">
       {Array.from({ length: max }, (_, i) => (
         <span
+          // biome-ignore lint/suspicious/noArrayIndexKey: 索引代表星级位置，是稳定的标识符
           key={i}
           className={`text-lg ${
             i < rate ? 'text-yellow-400' : 'text-gray-300'
@@ -184,6 +185,108 @@ const DividerDisplay: React.FC = () => (
   <div className="w-full border-t border-gray-300" />
 )
 
+// 处理日期相关类型的渲染
+const renderDateTypes = (value: unknown, valueType: ValueType) => {
+  switch (valueType) {
+    case 'date':
+      return <span>{formatDate(value, 'YYYY-MM-DD')}</span>
+    case 'dateTime':
+      return <span>{formatDate(value, 'YYYY-MM-DD HH:mm:ss')}</span>
+    case 'dateWeek':
+      return <span>{formatDate(value, 'YYYY年第WW周')}</span>
+    case 'dateMonth':
+      return <span>{formatDate(value, 'YYYY-MM')}</span>
+    case 'dateQuarter': {
+      const date = new Date(value as string | number | Date)
+      const quarter = Math.floor(date.getMonth() / 3) + 1
+      return (
+        <span>
+          {date.getFullYear()}年第{quarter}季度
+        </span>
+      )
+    }
+    case 'dateYear':
+      return <span>{formatDate(value, 'YYYY')}</span>
+    case 'dateRange':
+    case 'dateTimeRange':
+      if (Array.isArray(value) && value.length === 2) {
+        const format =
+          valueType === 'dateRange' ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss'
+        return (
+          <span>
+            {formatDate(value[0], format)} ~ {formatDate(value[1], format)}
+          </span>
+        )
+      }
+      return <span>{String(value)}</span>
+    case 'time':
+      return <span>{formatDate(value, 'HH:mm:ss')}</span>
+    case 'timeRange':
+      if (Array.isArray(value) && value.length === 2) {
+        return (
+          <span>
+            {formatDate(value[0], 'HH:mm:ss')} ~{' '}
+            {formatDate(value[1], 'HH:mm:ss')}
+          </span>
+        )
+      }
+      return <span>{String(value)}</span>
+    default:
+      return null
+  }
+}
+
+// 处理选择相关类型的渲染
+const renderSelectTypes = (
+  value: unknown,
+  valueType: ValueType,
+  options: Array<{ label: string; value: unknown }>
+) => {
+  switch (valueType) {
+    case 'select': {
+      const selectedOption = options.find((opt) => opt.value === value)
+      return <span>{selectedOption?.label || String(value)}</span>
+    }
+    case 'checkbox':
+      if (Array.isArray(value)) {
+        const selectedLabels = value.map((v) => {
+          const option = options.find((opt) => opt.value === v)
+          return option?.label || String(v)
+        })
+        return (
+          <div className="flex flex-wrap gap-1">
+            {selectedLabels.map((label) => (
+              <span
+                key={`checkbox-${label}`}
+                className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+        )
+      }
+      return <span>{String(value)}</span>
+    case 'radio':
+    case 'radioButton': {
+      const radioOption = options.find((opt) => opt.value === value)
+      return (
+        <span
+          className={
+            valueType === 'radioButton'
+              ? 'px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded'
+              : ''
+          }
+        >
+          {radioOption?.label || String(value)}
+        </span>
+      )
+    }
+    default:
+      return null
+  }
+}
+
 export const ValueTypeRenderer: React.FC<ValueTypeRendererProps<unknown>> = ({
   value,
   valueType = 'text',
@@ -195,6 +298,30 @@ export const ValueTypeRenderer: React.FC<ValueTypeRendererProps<unknown>> = ({
     return <span className="text-gray-400">-</span>
   }
 
+  // 处理日期相关类型
+  const dateTypes = [
+    'date',
+    'dateTime',
+    'dateWeek',
+    'dateMonth',
+    'dateQuarter',
+    'dateYear',
+    'dateRange',
+    'dateTimeRange',
+    'time',
+    'timeRange',
+  ]
+  if (dateTypes.includes(valueType)) {
+    return renderDateTypes(value, valueType)
+  }
+
+  // 处理选择相关类型
+  const selectTypes = ['select', 'checkbox', 'radio', 'radioButton']
+  if (selectTypes.includes(valueType)) {
+    return renderSelectTypes(value, valueType, options)
+  }
+
+  // 处理其他类型
   switch (valueType) {
     case 'password':
       return <span className="text-gray-400">{'*'.repeat(8)}</span>
@@ -213,101 +340,8 @@ export const ValueTypeRenderer: React.FC<ValueTypeRendererProps<unknown>> = ({
         </div>
       )
 
-    case 'date':
-      return <span>{formatDate(value, 'YYYY-MM-DD')}</span>
-
-    case 'dateTime':
-      return <span>{formatDate(value, 'YYYY-MM-DD HH:mm:ss')}</span>
-
-    case 'dateWeek':
-      return <span>{formatDate(value, 'YYYY年第WW周')}</span>
-
-    case 'dateMonth':
-      return <span>{formatDate(value, 'YYYY-MM')}</span>
-
-    case 'dateQuarter': {
-      // 使用类型断言因为这里我们知道 value 应该是日期类型
-      const date = new Date(value as string | number | Date)
-      const quarter = Math.floor(date.getMonth() / 3) + 1
-      return (
-        <span>
-          {date.getFullYear()}年第{quarter}季度
-        </span>
-      )
-    }
-
-    case 'dateYear':
-      return <span>{formatDate(value, 'YYYY')}</span>
-
-    case 'dateRange':
-    case 'dateTimeRange':
-      if (Array.isArray(value) && value.length === 2) {
-        const format =
-          valueType === 'dateRange' ? 'YYYY-MM-DD' : 'YYYY-MM-DD HH:mm:ss'
-        return (
-          <span>
-            {formatDate(value[0], format)} ~ {formatDate(value[1], format)}
-          </span>
-        )
-      }
-      return <span>{String(value)}</span>
-
-    case 'time':
-      return <span>{formatDate(value, 'HH:mm:ss')}</span>
-
-    case 'timeRange':
-      if (Array.isArray(value) && value.length === 2) {
-        return (
-          <span>
-            {formatDate(value[0], 'HH:mm:ss')} ~{' '}
-            {formatDate(value[1], 'HH:mm:ss')}
-          </span>
-        )
-      }
-      return <span>{String(value)}</span>
-
-    case 'select':
-      const selectedOption = options.find((opt) => opt.value === value)
-      return <span>{selectedOption?.label || String(value)}</span>
-
-    case 'checkbox':
-      if (Array.isArray(value)) {
-        const selectedLabels = value.map((v) => {
-          const option = options.find((opt) => opt.value === v)
-          return option?.label || String(v)
-        })
-        return (
-          <div className="flex flex-wrap gap-1">
-            {selectedLabels.map((label, index) => (
-              <span
-                key={index}
-                className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded"
-              >
-                {label}
-              </span>
-            ))}
-          </div>
-        )
-      }
-      return <span>{String(value)}</span>
-
     case 'rate':
       return <RateDisplay value={Number(value)} />
-
-    case 'radio':
-    case 'radioButton':
-      const radioOption = options.find((opt) => opt.value === value)
-      return (
-        <span
-          className={
-            valueType === 'radioButton'
-              ? 'px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded'
-              : ''
-          }
-        >
-          {radioOption?.label || String(value)}
-        </span>
-      )
 
     case 'progress':
       return <ProgressDisplay value={Number(value)} />
