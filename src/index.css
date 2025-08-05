@@ -47,12 +47,12 @@
 }
 
 .paa-table-container .resize-handle:hover {
-  background: #3b82f6;
-  width: 6px;
+  background: #f3f4f6;
+  width: 3px;
 }
 
 .paa-table-container .resize-handle.is-resizing {
-  background: #3b82f6;
-  width: 6px;
-  box-shadow: 0 0 0 1px #3b82f6;
+  background: #f3f4f6;
+  width: 3px;
+  box-shadow: 0 0 0 1px #f3f4f6;
 }

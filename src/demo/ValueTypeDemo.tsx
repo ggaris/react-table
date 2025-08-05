@@ -283,7 +283,11 @@ function ValueTypeDemo() {
             <div className="mb-4 text-sm text-gray-600">
               展示文本、金额、评分、进度条、下拉选择等基础类型
             </div>
-            <ReactTable data={data} columns={basicColumns} pageSize={5} />
+            <ReactTable
+              data={data}
+              columns={basicColumns}
+              pagination={{ pageSize: 5 }}
+            />
           </div>
 
           {/* 高级数据类型 */}
@@ -292,7 +296,11 @@ function ValueTypeDemo() {
             <div className="mb-4 text-sm text-gray-600">
               展示图片、文本域、日期、百分比、多选标签等高级类型
             </div>
-            <ReactTable data={data} columns={advancedColumns} pageSize={5} />
+            <ReactTable
+              data={data}
+              columns={advancedColumns}
+              pagination={{ pageSize: 5 }}
+            />
           </div>
 
           {/* 完整功能演示 */}
@@ -302,7 +310,11 @@ function ValueTypeDemo() {
               展示所有支持的 valueType
               类型（注意：此表格列较多，建议横向滚动查看）
             </div>
-            <ReactTable data={data} columns={columns} pageSize={8} />
+            <ReactTable
+              data={data}
+              columns={columns}
+              pagination={{ pageSize: 8 }}
+            />
           </div>
 
           {/* 功能说明 */}

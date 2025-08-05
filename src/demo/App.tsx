@@ -143,8 +143,8 @@ function App() {
             <ReactTable
               data={data}
               columns={columns}
-              pageSize={10}
-              onColumnOrderChange={handleColumnOrderChange}
+              pagination={{ pageSize: 10 }}
+              callbacks={{ onColumnOrderChange: handleColumnOrderChange }}
             />
           </div>
 
@@ -153,8 +153,10 @@ function App() {
             <ReactTable
               data={data.slice(0, 5)}
               columns={columns}
-              enablePagination={false}
-              enableColumnDragging={false}
+              features={{
+                pagination: false,
+                columnDragging: false,
+              }}
             />
           </div>
 
@@ -163,11 +165,12 @@ function App() {
             <ReactTable
               data={data.slice(0, 8)}
               columns={columns}
-              enableSorting={false}
-              pageSize={8}
-              onColumnOrderChange={(order) =>
-                console.log('排序禁用表格列顺序:', order)
-              }
+              features={{ sorting: false }}
+              pagination={{ pageSize: 8 }}
+              callbacks={{
+                onColumnOrderChange: (order) =>
+                  console.log('排序禁用表格列顺序:', order),
+              }}
             />
           </div>
 
