@@ -1,5 +1,5 @@
 import React from 'react'
-import PaaTable, { type PaaColumnDef } from '../components/PaaTable'
+import ReactTable, { type ReactTableColumnDef } from '../components/ReactTable'
 import ValueTypeDemo from './ValueTypeDemo'
 
 type Person = {
@@ -11,8 +11,8 @@ type Person = {
   salary: number
 }
 
-// 将 TanStack Table 的 columns 转换为 PaaColumnDef 类型
-const columns: PaaColumnDef<Person, unknown>[] = [
+// 将 TanStack Table 的 columns 转换为 ReactTableColumnDef 类型
+const columns: ReactTableColumnDef<Person, unknown>[] = [
   {
     id: 'id',
     accessorKey: 'id',
@@ -55,7 +55,7 @@ const generateMockData = (count: number): Person[] => {
   const departments = ['技术部', '市场部', '销售部', '人事部', '财务部']
   const names = [
     '张三',
-    '李四',
+    '李四33333333333',
     '王五',
     '赵六',
     '钱七',
@@ -110,7 +110,7 @@ function App() {
       <div className="container mx-auto py-8 px-4">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            PaaTable 组件演示
+            ReactTable 组件演示
           </h1>
           <p className="text-gray-600">
             基于 TanStack Table 的 React 表格组件，支持列拖拽重排
@@ -140,36 +140,37 @@ function App() {
                 </p>
               )}
             </div>
-            <PaaTable
+            <ReactTable
               data={data}
               columns={columns}
-              pageSize={10}
-              enableColumnDragging={true}
-              onColumnOrderChange={handleColumnOrderChange}
+              pagination={{ pageSize: 10 }}
+              callbacks={{ onColumnOrderChange: handleColumnOrderChange }}
             />
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">禁用列拖拽的表格</h2>
-            <PaaTable
+            <ReactTable
               data={data.slice(0, 5)}
               columns={columns}
-              enablePagination={false}
-              enableColumnDragging={false}
+              features={{
+                pagination: false,
+                columnDragging: false,
+              }}
             />
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">禁用排序但支持列拖拽</h2>
-            <PaaTable
+            <ReactTable
               data={data.slice(0, 8)}
               columns={columns}
-              enableSorting={false}
-              enableColumnDragging={true}
-              pageSize={8}
-              onColumnOrderChange={(order) =>
-                console.log('排序禁用表格列顺序:', order)
-              }
+              features={{ sorting: false }}
+              pagination={{ pageSize: 8 }}
+              callbacks={{
+                onColumnOrderChange: (order) =>
+                  console.log('排序禁用表格列顺序:', order),
+              }}
             />
           </div>
 

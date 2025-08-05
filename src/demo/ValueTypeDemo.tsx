@@ -1,6 +1,6 @@
 import React from 'react'
-import type { PaaColumnDef } from '../components/PaaTable'
-import PaaTable from '../components/PaaTable'
+import type { ReactTableColumnDef } from '../components/ReactTable'
+import ReactTable from '../components/ReactTable'
 
 // 扩展数据类型来支持各种 valueType 示例
 type DemoData = {
@@ -38,7 +38,7 @@ const tagOptions = [
   { label: 'Node.js', value: 'node' },
 ]
 
-const columns: PaaColumnDef<DemoData, unknown>[] = [
+const columns: ReactTableColumnDef<DemoData, unknown>[] = [
   {
     id: 'id',
     accessorKey: 'id',
@@ -201,7 +201,7 @@ const generateMockData = (count: number): DemoData[] => {
 function ValueTypeDemo() {
   const [data] = React.useState(() => generateMockData(20))
 
-  const basicColumns: PaaColumnDef<DemoData, unknown>[] = [
+  const basicColumns: ReactTableColumnDef<DemoData, unknown>[] = [
     { id: 'name', accessorKey: 'name', header: '姓名', valueType: 'text' },
     {
       id: 'salary',
@@ -230,7 +230,7 @@ function ValueTypeDemo() {
     },
   ]
 
-  const advancedColumns: PaaColumnDef<DemoData, unknown>[] = [
+  const advancedColumns: ReactTableColumnDef<DemoData, unknown>[] = [
     {
       id: 'avatar',
       accessorKey: 'avatar',
@@ -283,11 +283,10 @@ function ValueTypeDemo() {
             <div className="mb-4 text-sm text-gray-600">
               展示文本、金额、评分、进度条、下拉选择等基础类型
             </div>
-            <PaaTable
+            <ReactTable
               data={data}
               columns={basicColumns}
-              pageSize={5}
-              enableColumnDragging={true}
+              pagination={{ pageSize: 5 }}
             />
           </div>
 
@@ -297,11 +296,10 @@ function ValueTypeDemo() {
             <div className="mb-4 text-sm text-gray-600">
               展示图片、文本域、日期、百分比、多选标签等高级类型
             </div>
-            <PaaTable
+            <ReactTable
               data={data}
               columns={advancedColumns}
-              pageSize={5}
-              enableColumnDragging={true}
+              pagination={{ pageSize: 5 }}
             />
           </div>
 
@@ -312,11 +310,10 @@ function ValueTypeDemo() {
               展示所有支持的 valueType
               类型（注意：此表格列较多，建议横向滚动查看）
             </div>
-            <PaaTable
+            <ReactTable
               data={data}
               columns={columns}
-              pageSize={8}
-              enableColumnDragging={true}
+              pagination={{ pageSize: 8 }}
             />
           </div>
 

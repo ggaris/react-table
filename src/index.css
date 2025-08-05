@@ -9,3 +9,50 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* 表格列宽调整增强样式 */
+.paa-table-container {
+  /* 为表格添加分隔线样式 */
+}
+
+.paa-table-container th {
+  border-right: 1px solid #e5e7eb;
+  white-space: nowrap; /* 表头内容不换行 */
+}
+
+.paa-table-container th:last-child {
+  border-right: none;
+}
+
+.paa-table-container td {
+  border-right: 1px solid #f3f4f6;
+}
+
+.paa-table-container td:last-child {
+  border-right: none;
+}
+
+/* 列宽调整手柄增强 */
+.paa-table-container .resize-handle {
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  transition: all 0.2s ease;
+  user-select: none;
+  z-index: 10;
+}
+
+.paa-table-container .resize-handle:hover {
+  background: #f3f4f6;
+  width: 3px;
+}
+
+.paa-table-container .resize-handle.is-resizing {
+  background: #f3f4f6;
+  width: 3px;
+  box-shadow: 0 0 0 1px #f3f4f6;
+}

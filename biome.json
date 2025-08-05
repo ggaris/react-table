@@ -15,9 +15,7 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "complexity": {
-        "noExcessiveCognitiveComplexity": "warn"
-      },
+      "complexity": {},
       "correctness": {
         "noUnusedVariables": "error"
       },
@@ -38,7 +36,12 @@
     }
   },
   "files": {
-    "include": ["src/**/*"],
-    "ignore": ["dist/**/*", "node_modules/**/*"]
+    "include": [
+      "src/**/*"
+    ],
+    "ignore": [
+      "dist/**/*",
+      "node_modules/**/*"
+    ]
   }
 }
