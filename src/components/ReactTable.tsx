@@ -105,6 +105,10 @@ export interface ReactTableProps<TData> {
   callbacks?: TableCallbacks
   contextMenu?: ContextMenuConfig
   defaultColumnVisibility?: VisibilityState
+  // 新增属性：localStorage 的 key，用于保存列可见性状态
+  storageKey?: string
+  // 新增属性：默认显示的列的 key 数组，如果不传则显示所有列
+  defaultVisibleColumns?: string[]
 }
 
 // 可拖拽的表头单元格组件
@@ -264,6 +268,8 @@ function ReactTable<TData>({
   callbacks = {},
   contextMenu: contextMenuConfig = {},
   defaultColumnVisibility = {},
+  storageKey,
+  defaultVisibleColumns,
 }: ReactTableProps<TData>) {
   // 从配置对象中解构参数，设置默认值
   const {
@@ -295,6 +301,39 @@ function ReactTable<TData>({
     row: rowContextMenu = { enabled: true },
   } = contextMenuConfig
 
+  // 初始化列可见性状态：从 localStorage 或默认配置取值
+  const initializeColumnVisibility = React.useCallback((): VisibilityState => {
+    // 如果有 localStorage key，先尝试从本地存储获取
+    if (storageKey) {
+      try {
+        const stored = localStorage.getItem(`paa-table-columns-${storageKey}`)
+        if (stored) {
+          const parsedVisibility = JSON.parse(stored) as VisibilityState
+          return parsedVisibility
+        }
+      } catch (error) {
+        console.warn('读取 localStorage 失败:', error)
+      }
+    }
+
+    // 如果没有本地存储或读取失败，使用默认配置
+    if (defaultVisibleColumns && defaultVisibleColumns.length > 0) {
+      const visibility: VisibilityState = {}
+      // 获取所有列的 ID
+      const allColumnIds = columns.map(
+        (column) => column.id || (column.accessorKey as string) || ''
+      )
+
+      // 设置所有列为隐藏，只显示指定的列
+      for (const columnId of allColumnIds) {
+        visibility[columnId] = defaultVisibleColumns.includes(columnId)
+      }
+      return visibility
+    }
+
+    // 如果都没有，使用 defaultColumnVisibility 或默认显示所有列
+    return defaultColumnVisibility
+  }, [columns, defaultColumnVisibility, defaultVisibleColumns, storageKey])
   // 右键菜单 Hook
   const { contextMenu, showContextMenu, hideContextMenu } = useContextMenu()
   const [sorting, setSorting] = React.useState<SortingState>([])
@@ -309,8 +348,9 @@ function ReactTable<TData>({
     columns.map((column) => column.id || (column.accessorKey as string) || '')
   )
   const [columnSizing, setColumnSizing] = React.useState<ColumnSizingState>({})
+  // 使用初始化函数设置列可见性状态
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>(defaultColumnVisibility)
+    React.useState<VisibilityState>(() => initializeColumnVisibility())
 
   // 配置拖拽传感器
   const sensors = useSensors(
@@ -389,6 +429,18 @@ function ReactTable<TData>({
         typeof updater === 'function' ? updater(columnVisibility) : updater
       setColumnVisibility(newVisibility)
       onColumnVisibilityChange?.(newVisibility)
+
+      // 如果有 localStorage key，保存到本地存储
+      if (storageKey) {
+        try {
+          localStorage.setItem(
+            `paa-table-columns-${storageKey}`,
+            JSON.stringify(newVisibility)
+          )
+        } catch (error) {
+          console.warn('保存到 localStorage 失败:', error)
+        }
+      }
     },
   })
 
@@ -409,12 +461,26 @@ function ReactTable<TData>({
   // 显示默认列
   const showDefaultColumns = React.useCallback(() => {
     const defaultVisibility: VisibilityState = {}
-    // 重置为初始的列可见性状态
-    for (const column of table.getAllColumns()) {
-      defaultVisibility[column.id] = defaultColumnVisibility[column.id] ?? true
+
+    // 如果有指定默认显示列，优先使用
+    if (defaultVisibleColumns && defaultVisibleColumns.length > 0) {
+      // 获取所有列的 ID
+      const allColumnIds = table.getAllColumns().map((column) => column.id)
+
+      // 设置所有列为隐藏，只显示指定的列
+      for (const columnId of allColumnIds) {
+        defaultVisibility[columnId] = defaultVisibleColumns.includes(columnId)
+      }
+    } else {
+      // 否则使用初始的 defaultColumnVisibility 或显示所有列
+      for (const column of table.getAllColumns()) {
+        defaultVisibility[column.id] =
+          defaultColumnVisibility[column.id] ?? true
+      }
     }
+
     table.setColumnVisibility(defaultVisibility)
-  }, [table, defaultColumnVisibility])
+  }, [table, defaultColumnVisibility, defaultVisibleColumns])
 
   // 显示所有列
   const showAllColumns = React.useCallback(() => {
@@ -809,35 +875,11 @@ function ReactTable<TData>({
         onDragEnd={handleDragEnd}
       >
         {tableContent}
-        {/* 右键菜单 */}
-        {enableContextMenu && (
-          <ContextMenu
-            visible={contextMenu.visible}
-            x={contextMenu.x}
-            y={contextMenu.y}
-            items={contextMenu.items}
-            onClose={hideContextMenu}
-          />
-        )}
       </DndContext>
     )
   }
 
-  return (
-    <>
-      {tableContent}
-      {/* 右键菜单 */}
-      {enableContextMenu && (
-        <ContextMenu
-          visible={contextMenu.visible}
-          x={contextMenu.x}
-          y={contextMenu.y}
-          items={contextMenu.items}
-          onClose={hideContextMenu}
-        />
-      )}
-    </>
-  )
+  return tableContent
 }
 
 export default ReactTable
