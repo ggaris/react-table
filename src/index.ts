@@ -8,8 +8,13 @@ export type {
   PaginationConfig,
   TableCallbacks,
   ContextMenuConfig,
+  RowSelectionConfig,
 } from './components/ReactTable'
-export type { ColumnSizingState, VisibilityState } from '@tanstack/react-table'
+export type {
+  ColumnSizingState,
+  VisibilityState,
+  RowSelectionState,
+} from '@tanstack/react-table'
 export {
   ValueTypeRenderer,
   type ValueType,

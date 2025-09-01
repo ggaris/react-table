@@ -23,6 +23,7 @@ import {
   type ColumnOrderState,
   type ColumnSizingState,
   type PaginationState,
+  type RowSelectionState,
   type SortingState,
   type VisibilityState,
   flexRender,
@@ -65,12 +66,23 @@ export interface TableFeatures {
   columnResizing?: boolean
   autoFitColumns?: boolean
   contextMenu?: boolean
+  rowSelection?: boolean
 }
 
 // 分页配置对象
 export interface PaginationConfig {
   pageSize?: number
   // 未来可扩展其他分页配置
+}
+
+// 行选择配置对象
+export interface RowSelectionConfig<TData = unknown> {
+  enabled?: boolean
+  multiple?: boolean
+  // 行选择回调
+  onSelectionChange?: (selectedRows: RowSelectionState) => void
+  // 获取行的唯一标识，默认使用行索引
+  getRowId?: (row: TData, index: number) => string
 }
 
 // 右键菜单配置
@@ -104,6 +116,7 @@ export interface ReactTableProps<TData> {
   pagination?: PaginationConfig
   callbacks?: TableCallbacks
   contextMenu?: ContextMenuConfig
+  rowSelection?: RowSelectionConfig<TData>
   defaultColumnVisibility?: VisibilityState
   // 新增属性：localStorage 的 key，用于保存列可见性状态
   storageKey?: string
@@ -267,6 +280,7 @@ function ReactTable<TData>({
   pagination: paginationConfig = {},
   callbacks = {},
   contextMenu: contextMenuConfig = {},
+  rowSelection: rowSelectionConfig = {},
   defaultColumnVisibility = {},
   storageKey,
   defaultVisibleColumns,
@@ -280,6 +294,7 @@ function ReactTable<TData>({
     columnResizing: enableColumnResizing = true,
     autoFitColumns: enableAutoFitColumns = true,
     contextMenu: enableContextMenu = true,
+    rowSelection: enableRowSelection = false,
   } = features
 
   const { pageSize = 10 } = paginationConfig
@@ -288,6 +303,14 @@ function ReactTable<TData>({
     onColumnSizingChange,
     onColumnVisibilityChange,
   } = callbacks
+
+  // 行选择配置
+  const {
+    enabled: rowSelectionEnabled = enableRowSelection,
+    multiple: allowMultipleSelection = true,
+    onSelectionChange,
+    getRowId,
+  } = rowSelectionConfig
 
   // 右键菜单配置
   const {
@@ -352,6 +375,13 @@ function ReactTable<TData>({
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>(() => initializeColumnVisibility())
 
+  // 行选择状态
+  const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
+
+  // 用于记录最后点击的行索引，支持 Shift 范围选择
+  const [lastClickedRowIndex, setLastClickedRowIndex] =
+    React.useState<number>(-1)
+
   // 配置拖拽传感器
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -372,20 +402,67 @@ function ReactTable<TData>({
 
   // 为每列计算基于内容的最小宽度
   const columnsWithMinSize = React.useMemo(() => {
-    return (columns as ColumnDef<TData, unknown>[]).map((column) => {
-      // 计算表头文本的最小宽度
-      const headerText = column.header?.toString?.() || column.id || ''
-      const minHeaderWidth = Math.max(headerText.length * 8 + 60, 100) // 更紧凑的计算
+    const baseColumns = (columns as ColumnDef<TData, unknown>[]).map(
+      (column) => {
+        // 计算表头文本的最小宽度
+        const headerText = column.header?.toString?.() || column.id || ''
+        const minHeaderWidth = Math.max(headerText.length * 8 + 60, 100) // 更紧凑的计算
 
-      return {
-        ...column,
-        minSize: minHeaderWidth,
-        maxSize: 800,
-        // 设置初始尺寸为最小尺寸，让内容决定实际宽度
-        size: minHeaderWidth,
+        return {
+          ...column,
+          minSize: minHeaderWidth,
+          maxSize: 800,
+          // 设置初始尺寸为最小尺寸，让内容决定实际宽度
+          size: minHeaderWidth,
+        }
       }
-    })
-  }, [columns])
+    )
+
+    // 如果启用行选择，在最前面添加选择框列
+    if (rowSelectionEnabled) {
+      const selectionColumn: ColumnDef<TData, unknown> = {
+        id: 'select',
+        header: allowMultipleSelection
+          ? ({ table }) => (
+              <input
+                type="checkbox"
+                checked={table.getIsAllRowsSelected()}
+                onChange={table.getToggleAllRowsSelectedHandler()}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                ref={(el) => {
+                  if (el) el.indeterminate = table.getIsSomeRowsSelected()
+                }}
+              />
+            )
+          : '',
+        cell: ({ row }) => (
+          <input
+            type={allowMultipleSelection ? 'checkbox' : 'radio'}
+            checked={row.getIsSelected()}
+            onChange={(e) => {
+              // 阻止事件冒泡，避免与行点击事件冲突
+              e.stopPropagation()
+              row.getToggleSelectedHandler()(e)
+            }}
+            onClick={(e) => {
+              // 阻止点击复选框时触发行的点击事件
+              e.stopPropagation()
+            }}
+            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+          />
+        ),
+        enableSorting: false,
+        enableColumnFilter: false,
+        size: 50,
+        minSize: 50,
+        maxSize: 50,
+      }
+
+      return [selectionColumn, ...baseColumns]
+    }
+
+    return baseColumns
+  }, [columns, rowSelectionEnabled, allowMultipleSelection])
 
   const table = useReactTable<TData>({
     data,
@@ -398,6 +475,10 @@ function ReactTable<TData>({
       : undefined,
     enableColumnResizing: enableColumnResizing,
     columnResizeMode: 'onChange',
+    // 行选择配置
+    enableRowSelection: rowSelectionEnabled,
+    enableMultiRowSelection: allowMultipleSelection,
+    getRowId: getRowId ? (row, index) => getRowId(row, index) : undefined,
     // 设置默认列属性
     defaultColumn: {
       minSize: 80, // 更紧凑的最小宽度
@@ -411,6 +492,7 @@ function ReactTable<TData>({
       columnOrder: enableColumnDragging ? columnOrder : undefined,
       columnSizing: enableColumnResizing ? columnSizing : undefined,
       columnVisibility,
+      rowSelection: rowSelectionEnabled ? rowSelection : undefined,
     },
     onSortingChange: enableSorting ? setSorting : undefined,
     onColumnFiltersChange: enableFiltering ? setColumnFilters : undefined,
@@ -442,7 +524,106 @@ function ReactTable<TData>({
         }
       }
     },
+    onRowSelectionChange: rowSelectionEnabled
+      ? (updater) => {
+          const newSelection =
+            typeof updater === 'function' ? updater(rowSelection) : updater
+          setRowSelection(newSelection)
+          onSelectionChange?.(newSelection)
+        }
+      : undefined,
   })
+
+  // 处理行点击事件，支持 Shift 和 Alt 修饰键
+  const handleRowClick = React.useCallback(
+    (
+      event: React.MouseEvent,
+      row: import('@tanstack/react-table').Row<TData>,
+      rowIndex: number
+    ) => {
+      if (!rowSelectionEnabled) return
+
+      // Ctrl + 左键（Windows）或 Cmd + 左键（Mac）：直接选中当前行
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault()
+        const rowId = row.id
+
+        if (!allowMultipleSelection) {
+          // 单选模式：直接选中当前行
+          table.setRowSelection({ [rowId]: true })
+        } else {
+          // 多选模式：切换当前行的选中状态
+          const currentSelection = table.getState().rowSelection || {}
+          const isSelected = currentSelection[rowId]
+          table.setRowSelection({
+            ...currentSelection,
+            [rowId]: !isSelected,
+          })
+        }
+        setLastClickedRowIndex(rowIndex)
+        return
+      }
+
+      // Shift + 左键：范围选择
+      if (
+        event.shiftKey &&
+        allowMultipleSelection &&
+        lastClickedRowIndex >= 0
+      ) {
+        event.preventDefault()
+        const currentSelection = table.getState().rowSelection || {}
+        const newSelection = { ...currentSelection }
+
+        const startIndex = Math.min(lastClickedRowIndex, rowIndex)
+        const endIndex = Math.max(lastClickedRowIndex, rowIndex)
+
+        // 获取当前页面的所有行
+        const rows = table.getRowModel().rows
+
+        // 选择范围内的所有行
+        for (let i = startIndex; i <= endIndex; i++) {
+          if (i < rows.length) {
+            const targetRow = rows[i]
+            newSelection[targetRow.id] = true
+          }
+        }
+
+        table.setRowSelection(newSelection)
+        return
+      }
+
+      // 普通点击：更新最后点击的行索引
+      setLastClickedRowIndex(rowIndex)
+    },
+    [rowSelectionEnabled, allowMultipleSelection, lastClickedRowIndex, table]
+  )
+
+  // 处理键盘事件，支持行选择的键盘操作
+  const handleRowKeyDown = React.useCallback(
+    (
+      event: React.KeyboardEvent,
+      row: import('@tanstack/react-table').Row<TData>,
+      rowIndex: number
+    ) => {
+      if (!rowSelectionEnabled) return
+
+      // Enter 或 Space 键：模拟点击行为
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+
+        // 创建一个模拟的鼠标事件
+        const syntheticMouseEvent = {
+          ctrlKey: event.ctrlKey,
+          metaKey: event.metaKey,
+          shiftKey: event.shiftKey,
+          preventDefault: event.preventDefault.bind(event),
+        } as React.MouseEvent
+
+        handleRowClick(syntheticMouseEvent, row, rowIndex)
+      }
+    },
+    [rowSelectionEnabled, handleRowClick]
+  )
 
   // 处理列拖拽结束事件
   const handleDragEnd = (event: DragEndEvent) => {
@@ -766,12 +947,23 @@ function ReactTable<TData>({
             ))}
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {table.getRowModel().rows.map((row) => (
+            {table.getRowModel().rows.map((row, rowIndex) => (
               <tr
                 key={row.id}
-                className="hover:bg-gray-50"
+                className={`hover:bg-gray-50 ${
+                  rowSelectionEnabled && row.getIsSelected()
+                    ? 'bg-blue-50 border-blue-200'
+                    : ''
+                } ${rowSelectionEnabled ? 'cursor-pointer select-none' : ''}`}
+                onClick={(e) => handleRowClick(e, row, rowIndex)}
+                onKeyDown={(e) => handleRowKeyDown(e, row, rowIndex)}
                 onContextMenu={(e) =>
                   handleRowContextMenu(e, row.original, row.index)
+                }
+                tabIndex={rowSelectionEnabled ? 0 : undefined}
+                role={rowSelectionEnabled ? 'button' : undefined}
+                aria-selected={
+                  rowSelectionEnabled ? row.getIsSelected() : undefined
                 }
               >
                 {row.getVisibleCells().map((cell) => {
