@@ -36,12 +36,7 @@
     }
   },
   "files": {
-    "include": [
-      "src/**/*"
-    ],
-    "ignore": [
-      "dist/**/*",
-      "node_modules/**/*"
-    ]
+    "include": ["src/**/*"],
+    "ignore": ["dist/**/*", "node_modules/**/*"]
   }
 }

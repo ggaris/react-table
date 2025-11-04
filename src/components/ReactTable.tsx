@@ -378,10 +378,6 @@ function ReactTable<TData>({
   // 行选择状态
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
 
-  // 用于记录最后点击的行索引，支持 Shift 范围选择
-  const [lastClickedRowIndex, setLastClickedRowIndex] =
-    React.useState<number>(-1)
-
   // 配置拖拽传感器
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -535,6 +531,11 @@ function ReactTable<TData>({
   })
 
   // 处理行点击事件，支持 Shift 和 Alt 修饰键
+  const [, setLastClickedRowIndex] = React.useState<number | null>(null)
+  // 用 ref 来同步保存 Shift 起点，避免 setState 的异步延迟
+  const shiftStartIndexRef = React.useRef<number | null>(null)
+
+  // ---- 替换这个 handleRowClick（完整、含日志） ----
   const handleRowClick = React.useCallback(
     (
       event: React.MouseEvent,
@@ -543,17 +544,24 @@ function ReactTable<TData>({
     ) => {
       if (!rowSelectionEnabled) return
 
-      // Ctrl + 左键（Windows）或 Cmd + 左键（Mac）：直接选中当前行
+      const rows = table.getRowModel().rows
+      const currentSelection = table.getState().rowSelection || {}
+      const newSelection = { ...currentSelection }
+
+      console.log(
+        '[handleRowClick] rowIndex:',
+        rowIndex,
+        'shiftStartRef:',
+        shiftStartIndexRef.current
+      )
+
+      // Ctrl/Cmd 行为
       if (event.ctrlKey || event.metaKey) {
         event.preventDefault()
         const rowId = row.id
-
         if (!allowMultipleSelection) {
-          // 单选模式：直接选中当前行
           table.setRowSelection({ [rowId]: true })
         } else {
-          // 多选模式：切换当前行的选中状态
-          const currentSelection = table.getState().rowSelection || {}
           const isSelected = currentSelection[rowId]
           table.setRowSelection({
             ...currentSelection,
@@ -561,41 +569,65 @@ function ReactTable<TData>({
           })
         }
         setLastClickedRowIndex(rowIndex)
+        // 点击非 Shift 时清掉 ref
+        shiftStartIndexRef.current = null
+        console.log('[handleRowClick] ctrl/cmd done, cleared shiftStartRef')
         return
       }
 
-      // Shift + 左键：范围选择
-      if (
-        event.shiftKey &&
-        allowMultipleSelection &&
-        lastClickedRowIndex >= 0
-      ) {
+      // Shift 行为：两次都按 Shift 才算范围
+      if (event.shiftKey && allowMultipleSelection) {
         event.preventDefault()
-        const currentSelection = table.getState().rowSelection || {}
-        const newSelection = { ...currentSelection }
 
-        const startIndex = Math.min(lastClickedRowIndex, rowIndex)
-        const endIndex = Math.max(lastClickedRowIndex, rowIndex)
+        // 第一次按 Shift：记录到 ref（同步）
+        if (shiftStartIndexRef.current === null) {
+          shiftStartIndexRef.current = rowIndex
+          console.log(
+            '[handleRowClick] shift FIRST, recorded:',
+            shiftStartIndexRef.current
+          )
+        } else {
+          // 第二读取 ref
+          const startIndex = Math.min(shiftStartIndexRef.current, rowIndex)
+          const endIndex = Math.max(shiftStartIndexRef.current, rowIndex)
+          console.log(
+            '[handleRowClick] shift SECOND, start:',
+            startIndex,
+            'end:',
+            endIndex
+          )
 
-        // 获取当前页面的所有行
-        const rows = table.getRowModel().rows
-
-        // 选择范围内的所有行
-        for (let i = startIndex; i <= endIndex; i++) {
-          if (i < rows.length) {
+          for (let i = startIndex; i <= endIndex; i++) {
             const targetRow = rows[i]
-            newSelection[targetRow.id] = true
+            if (targetRow) {
+              newSelection[targetRow.id] = true
+            } else {
+              console.warn('[handleRowClick] missing row at index', i)
+            }
           }
+
+          table.setRowSelection(newSelection)
+          // 重置 ref
+          shiftStartIndexRef.current = null
+          console.log('[handleRowClick] range selected, cleared shiftStartRef')
         }
 
-        table.setRowSelection(newSelection)
         return
       }
 
-      // 普通点击：更新最后点击的行索引
+      // 普通点击：清除 shiftRef 并记录最后点击索引
+      shiftStartIndexRef.current = null
       setLastClickedRowIndex(rowIndex)
+
+      const rowId = row.id
+      if (!allowMultipleSelection) {
+        table.setRowSelection({ [rowId]: true })
+      } else {
+        table.setRowSelection({ [rowId]: true })
+      }
+      console.log('[handleRowClick] normal click, selected row:', rowId)
     },
-    [rowSelectionEnabled, allowMultipleSelection, lastClickedRowIndex, table]
+    [table, rowSelectionEnabled, allowMultipleSelection]
   )
 
   // 处理键盘事件，支持行选择的键盘操作

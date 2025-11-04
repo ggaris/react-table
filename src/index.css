@@ -17,7 +17,8 @@
 
 .paa-table-container th {
   border-right: 1px solid #e5e7eb;
-  white-space: nowrap; /* 表头内容不换行 */
+  white-space: nowrap;
+  /* 表头内容不换行 */
 }
 
 .paa-table-container th:last-child {
