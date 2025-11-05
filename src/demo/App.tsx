@@ -167,10 +167,9 @@ function App() {
               </p>
             </div>
             <ReactTable
-              data={data.slice(0, 8)}
+              data={data.slice(0, 20)}
               columns={columns}
               features={{
-                pagination: false,
                 columnDragging: false,
               }}
               defaultVisibleColumns={['id', 'name', 'department']} // 只显示这三列

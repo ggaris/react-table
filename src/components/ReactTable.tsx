@@ -532,10 +532,11 @@ function ReactTable<TData>({
 
   // 处理行点击事件，支持 Shift 和 Alt 修饰键
   const [, setLastClickedRowIndex] = React.useState<number | null>(null)
-  // 用 ref 来同步保存 Shift 起点，避免 setState 的异步延迟
-  const shiftStartIndexRef = React.useRef<number | null>(null)
 
-  // ---- 替换这个 handleRowClick（完整、含日志） ----
+  let shiftStartIndex: number | null = null
+  let shiftEndIndex: number | null = null
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies:
   const handleRowClick = React.useCallback(
     (
       event: React.MouseEvent,
@@ -548,12 +549,7 @@ function ReactTable<TData>({
       const currentSelection = table.getState().rowSelection || {}
       const newSelection = { ...currentSelection }
 
-      console.log(
-        '[handleRowClick] rowIndex:',
-        rowIndex,
-        'shiftStartRef:',
-        shiftStartIndexRef.current
-      )
+      console.log('[handleRowClick] rowIndex:', rowIndex)
 
       // Ctrl/Cmd 行为
       if (event.ctrlKey || event.metaKey) {
@@ -569,27 +565,25 @@ function ReactTable<TData>({
           })
         }
         setLastClickedRowIndex(rowIndex)
-        // 点击非 Shift 时清掉 ref
-        shiftStartIndexRef.current = null
-        console.log('[handleRowClick] ctrl/cmd done, cleared shiftStartRef')
+        shiftStartIndex = null
+        console.log('[handleRowClick] ctrl/cmd done, cleared shiftStartIndex')
         return
       }
 
-      // Shift 行为：两次都按 Shift 才算范围
+      // Shift 行为（两次点击选中范围）
       if (event.shiftKey && allowMultipleSelection) {
         event.preventDefault()
 
-        // 第一次按 Shift：记录到 ref（同步）
-        if (shiftStartIndexRef.current === null) {
-          shiftStartIndexRef.current = rowIndex
+        if (shiftStartIndex === null) {
+          shiftStartIndex = rowIndex
           console.log(
             '[handleRowClick] shift FIRST, recorded:',
-            shiftStartIndexRef.current
+            shiftStartIndex
           )
         } else {
-          // 第二读取 ref
-          const startIndex = Math.min(shiftStartIndexRef.current, rowIndex)
-          const endIndex = Math.max(shiftStartIndexRef.current, rowIndex)
+          shiftEndIndex = rowIndex
+          const startIndex = Math.min(shiftStartIndex, shiftEndIndex)
+          const endIndex = Math.max(shiftStartIndex, shiftEndIndex)
           console.log(
             '[handleRowClick] shift SECOND, start:',
             startIndex,
@@ -607,16 +601,18 @@ function ReactTable<TData>({
           }
 
           table.setRowSelection(newSelection)
-          // 重置 ref
-          shiftStartIndexRef.current = null
-          console.log('[handleRowClick] range selected, cleared shiftStartRef')
+          // 清空范围
+          shiftStartIndex = null
+          shiftEndIndex = null
+          console.log('[handleRowClick] range selected, cleared shift indexes')
         }
 
         return
       }
 
-      // 普通点击：清除 shiftRef 并记录最后点击索引
-      shiftStartIndexRef.current = null
+      // 普通点击：清除 Shift 起点
+      shiftStartIndex = null
+      shiftEndIndex = null
       setLastClickedRowIndex(rowIndex)
 
       const rowId = row.id
