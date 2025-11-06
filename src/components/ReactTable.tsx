@@ -122,6 +122,7 @@ export interface ReactTableProps<TData> {
   storageKey?: string
   // 新增属性：默认显示的列的 key 数组，如果不传则显示所有列
   defaultVisibleColumns?: string[]
+  onDataChange?: (newData: TData[]) => void
 }
 
 // 可拖拽的表头单元格组件
@@ -284,6 +285,7 @@ function ReactTable<TData>({
   defaultColumnVisibility = {},
   storageKey,
   defaultVisibleColumns,
+  onDataChange,
 }: ReactTableProps<TData>) {
   // 从配置对象中解构参数，设置默认值
   const {
@@ -617,9 +619,15 @@ function ReactTable<TData>({
 
       const rowId = row.id
       if (!allowMultipleSelection) {
+        // 单选：清空旧选择，只选当前行
         table.setRowSelection({ [rowId]: true })
       } else {
-        table.setRowSelection({ [rowId]: true })
+        // 多选：在已有选择上追加当前行
+        const currentSelection = table.getState().rowSelection || {}
+        table.setRowSelection({
+          ...currentSelection,
+          [rowId]: true,
+        })
       }
       console.log('[handleRowClick] normal click, selected row:', rowId)
     },
@@ -875,11 +883,34 @@ function ReactTable<TData>({
           key: 'delete',
           label: '删除',
           icon: '🗑️',
-          onClick: () => console.log('删除行数据:', rowData),
+          onClick: () => {
+            const selectedRowIds = Object.keys(
+              table.getState().rowSelection || {}
+            )
+
+            // 如果有选中多行，就删选中的；否则删当前行
+            const idsToDelete =
+              selectedRowIds.length > 0 ? selectedRowIds : [rowIndex.toString()]
+
+            const remaining = data.filter(
+              (_, index) => !idsToDelete.includes(index.toString())
+            )
+            // 调用父组件的更新方法
+            if (onDataChange) {
+              onDataChange(remaining)
+            }
+
+            table.setRowSelection({}) // 清空选中状态
+            console.log('删除的行:', idsToDelete)
+
+            // 清空选中状态
+            table.setRowSelection({})
+            console.log('删除选中行:', selectedRowIds)
+          },
         },
       ]
     },
-    [rowContextMenu, enableContextMenu]
+    [rowContextMenu, enableContextMenu, onDataChange, data, table]
   )
 
   // 处理表头右键菜单

@@ -78,7 +78,7 @@ const generateMockData = (count: number): Person[] => {
 }
 
 function App() {
-  const [data] = React.useState(() => generateMockData(50))
+  const [data, setData] = React.useState(() => generateMockData(50))
   const [columnOrder, setColumnOrder] = React.useState<string[]>([])
   const [currentDemo, setCurrentDemo] = React.useState<'basic' | 'valueType'>(
     'basic'
@@ -155,6 +155,7 @@ function App() {
                 onColumnOrderChange: handleColumnOrderChange,
               }}
               storageKey="demo-table" // 使用 localStorage 保存列状态
+              onDataChange={setData}
             />
           </div>
 
