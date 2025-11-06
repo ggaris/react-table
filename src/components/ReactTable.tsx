@@ -122,6 +122,7 @@ export interface ReactTableProps<TData> {
   storageKey?: string
   // 新增属性：默认显示的列的 key 数组，如果不传则显示所有列
   defaultVisibleColumns?: string[]
+  onDataChange?: (newData: TData[]) => void
 }
 
 // 可拖拽的表头单元格组件
@@ -284,6 +285,7 @@ function ReactTable<TData>({
   defaultColumnVisibility = {},
   storageKey,
   defaultVisibleColumns,
+  onDataChange,
 }: ReactTableProps<TData>) {
   // 从配置对象中解构参数，设置默认值
   const {
@@ -377,10 +379,6 @@ function ReactTable<TData>({
 
   // 行选择状态
   const [rowSelection, setRowSelection] = React.useState<RowSelectionState>({})
-
-  // 用于记录最后点击的行索引，支持 Shift 范围选择
-  const [lastClickedRowIndex, setLastClickedRowIndex] =
-    React.useState<number>(-1)
 
   // 配置拖拽传感器
   const sensors = useSensors(
@@ -535,6 +533,12 @@ function ReactTable<TData>({
   })
 
   // 处理行点击事件，支持 Shift 和 Alt 修饰键
+  const [, setLastClickedRowIndex] = React.useState<number | null>(null)
+
+  let shiftStartIndex: number | null = null
+  let shiftEndIndex: number | null = null
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies:
   const handleRowClick = React.useCallback(
     (
       event: React.MouseEvent,
@@ -543,17 +547,19 @@ function ReactTable<TData>({
     ) => {
       if (!rowSelectionEnabled) return
 
-      // Ctrl + 左键（Windows）或 Cmd + 左键（Mac）：直接选中当前行
+      const rows = table.getRowModel().rows
+      const currentSelection = table.getState().rowSelection || {}
+      const newSelection = { ...currentSelection }
+
+      console.log('[handleRowClick] rowIndex:', rowIndex)
+
+      // Ctrl/Cmd 行为
       if (event.ctrlKey || event.metaKey) {
         event.preventDefault()
         const rowId = row.id
-
         if (!allowMultipleSelection) {
-          // 单选模式：直接选中当前行
           table.setRowSelection({ [rowId]: true })
         } else {
-          // 多选模式：切换当前行的选中状态
-          const currentSelection = table.getState().rowSelection || {}
           const isSelected = currentSelection[rowId]
           table.setRowSelection({
             ...currentSelection,
@@ -561,41 +567,71 @@ function ReactTable<TData>({
           })
         }
         setLastClickedRowIndex(rowIndex)
+        shiftStartIndex = null
+        console.log('[handleRowClick] ctrl/cmd done, cleared shiftStartIndex')
         return
       }
 
-      // Shift + 左键：范围选择
-      if (
-        event.shiftKey &&
-        allowMultipleSelection &&
-        lastClickedRowIndex >= 0
-      ) {
+      // Shift 行为（两次点击选中范围）
+      if (event.shiftKey && allowMultipleSelection) {
         event.preventDefault()
-        const currentSelection = table.getState().rowSelection || {}
-        const newSelection = { ...currentSelection }
 
-        const startIndex = Math.min(lastClickedRowIndex, rowIndex)
-        const endIndex = Math.max(lastClickedRowIndex, rowIndex)
+        if (shiftStartIndex === null) {
+          shiftStartIndex = rowIndex
+          console.log(
+            '[handleRowClick] shift FIRST, recorded:',
+            shiftStartIndex
+          )
+        } else {
+          shiftEndIndex = rowIndex
+          const startIndex = Math.min(shiftStartIndex, shiftEndIndex)
+          const endIndex = Math.max(shiftStartIndex, shiftEndIndex)
+          console.log(
+            '[handleRowClick] shift SECOND, start:',
+            startIndex,
+            'end:',
+            endIndex
+          )
 
-        // 获取当前页面的所有行
-        const rows = table.getRowModel().rows
-
-        // 选择范围内的所有行
-        for (let i = startIndex; i <= endIndex; i++) {
-          if (i < rows.length) {
+          for (let i = startIndex; i <= endIndex; i++) {
             const targetRow = rows[i]
-            newSelection[targetRow.id] = true
+            if (targetRow) {
+              newSelection[targetRow.id] = true
+            } else {
+              console.warn('[handleRowClick] missing row at index', i)
+            }
           }
+
+          table.setRowSelection(newSelection)
+          // 清空范围
+          shiftStartIndex = null
+          shiftEndIndex = null
+          console.log('[handleRowClick] range selected, cleared shift indexes')
         }
 
-        table.setRowSelection(newSelection)
         return
       }
 
-      // 普通点击：更新最后点击的行索引
+      // 普通点击：清除 Shift 起点
+      shiftStartIndex = null
+      shiftEndIndex = null
       setLastClickedRowIndex(rowIndex)
+
+      const rowId = row.id
+      if (!allowMultipleSelection) {
+        // 单选：清空旧选择，只选当前行
+        table.setRowSelection({ [rowId]: true })
+      } else {
+        // 多选：在已有选择上追加当前行
+        const currentSelection = table.getState().rowSelection || {}
+        table.setRowSelection({
+          ...currentSelection,
+          [rowId]: true,
+        })
+      }
+      console.log('[handleRowClick] normal click, selected row:', rowId)
     },
-    [rowSelectionEnabled, allowMultipleSelection, lastClickedRowIndex, table]
+    [table, rowSelectionEnabled, allowMultipleSelection]
   )
 
   // 处理键盘事件，支持行选择的键盘操作
@@ -825,11 +861,29 @@ function ReactTable<TData>({
         return []
       }
 
-      if (rowContextMenu.items) {
-        return rowContextMenu.items(rowData, rowIndex)
+      const selectedRowIds = Object.keys(table.getState().rowSelection || {})
+      const isMultiSelect = selectedRowIds.length > 1
+
+      // 多选模式：只显示“删除选中行”
+      if (isMultiSelect) {
+        return [
+          {
+            key: 'delete-selected',
+            label: `删除选中行 (${selectedRowIds.length})`,
+            icon: '🗑️',
+            onClick: () => {
+              const remaining = data.filter(
+                (_, index) => !selectedRowIds.includes(index.toString())
+              )
+              if (onDataChange) onDataChange(remaining)
+              table.setRowSelection({})
+              console.log('删除选中行:', selectedRowIds)
+            },
+          },
+        ]
       }
 
-      // 默认行菜单项
+      // 单选模式：显示完整菜单
       return [
         {
           key: 'view',
@@ -847,11 +901,16 @@ function ReactTable<TData>({
           key: 'delete',
           label: '删除',
           icon: '🗑️',
-          onClick: () => console.log('删除行数据:', rowData),
+          onClick: () => {
+            const remaining = data.filter((_, index) => index !== rowIndex)
+            if (onDataChange) onDataChange(remaining)
+            table.setRowSelection({})
+            console.log('删除单行:', rowIndex)
+          },
         },
       ]
     },
-    [rowContextMenu, enableContextMenu]
+    [rowContextMenu, enableContextMenu, data, onDataChange, table]
   )
 
   // 处理表头右键菜单
