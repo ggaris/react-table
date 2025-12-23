@@ -30,3 +30,7 @@ export {
   type ContextMenuProps,
 } from './components/ContextMenu'
 export { EditableCell } from './components/EditableCell'
+export {
+  EditConfirmDialog,
+  type EditAction,
+} from './components/EditConfirmDialog'

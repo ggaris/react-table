@@ -40,6 +40,10 @@ import {
   useContextMenu,
 } from './ContextMenu'
 import { EditableCell } from './EditableCell'
+import {
+  EditConfirmDialog,
+  type EditAction,
+} from './EditConfirmDialog'
 import { type ValueType, ValueTypeRenderer } from './ValueTypeRenderer'
 
 // 编辑单元格的输入类型
@@ -460,6 +464,40 @@ function ReactTable<TData>({
   const [editingCellKey, setEditingCellKey] = React.useState<string>('') // 格式: "rowIndex-columnId"
   const [editedData, setEditedData] = React.useState<TData[]>(data)
 
+  // 编辑冲突处理状态
+  const [showConfirmDialog, setShowConfirmDialog] = React.useState(false)
+  const [pendingEdit, setPendingEdit] = React.useState<{
+    rowIndex: number
+    columnId?: string
+  } | null>(null)
+
+  // LocalStorage 键名
+  const EDIT_ACTION_KEY = 'paa-table-edit-action-preference'
+
+  // 获取用户的编辑操作偏好
+  const getEditActionPreference = (): EditAction | null => {
+    try {
+      const stored = localStorage.getItem(EDIT_ACTION_KEY)
+      return stored as EditAction | null
+    } catch (error) {
+      console.warn('读取编辑操作偏好失败:', error)
+      return null
+    }
+  }
+
+  // 保存用户的编辑操作偏好
+  const saveEditActionPreference = (action: EditAction | null) => {
+    try {
+      if (action) {
+        localStorage.setItem(EDIT_ACTION_KEY, action)
+      } else {
+        localStorage.removeItem(EDIT_ACTION_KEY)
+      }
+    } catch (error) {
+      console.warn('保存编辑操作偏好失败:', error)
+    }
+  }
+
   // 当 data prop 变化时，更新 editedData
   React.useEffect(() => {
     setEditedData(data)
@@ -708,11 +746,106 @@ function ReactTable<TData>({
     [rowSelectionEnabled, handleRowClick]
   )
 
+  // 处理确认对话框响应
+  const handleConfirmDialog = React.useCallback(
+    async (action: EditAction, remember: boolean) => {
+      setShowConfirmDialog(false)
+
+      // 如果用户选择记住
+      if (remember && action !== 'cancel') {
+        saveEditActionPreference(action)
+      }
+
+      if (action === 'cancel') {
+        // 取消操作,清除待处理的编辑
+        setPendingEdit(null)
+        return
+      }
+
+      if (action === 'save') {
+        // 保存当前编辑
+        await completeEditing()
+      } else if (action === 'discard') {
+        // 放弃当前编辑
+        cancelEditing()
+      }
+
+      // 执行待处理的编辑
+      if (pendingEdit) {
+        const { rowIndex, columnId } = pendingEdit
+        setEditingRowIndex(rowIndex)
+        onRowEditStart?.(rowIndex)
+
+        if (editMode === 'cell' && columnId) {
+          setEditingCellKey(`${rowIndex}-${columnId}`)
+        } else {
+          setEditingCellKey('')
+        }
+        setPendingEdit(null)
+      }
+    },
+    [pendingEdit, editMode, onRowEditStart, saveEditActionPreference]
+  )
+
   // 开始编辑行或单元格
   const startEditing = React.useCallback(
     (rowIndex: number, columnId?: string) => {
       if (!rowEditingEnabled) return
 
+      // 检查是否已经在编辑
+      const isCurrentlyEditing = editingRowIndex >= 0
+
+      if (isCurrentlyEditing) {
+        // 检查是否是同一个位置
+        const isSameLocation =
+          editingRowIndex === rowIndex &&
+          (editMode === 'row' ||
+            (editMode === 'cell' &&
+              editingCellKey === `${rowIndex}-${columnId}`))
+
+        if (isSameLocation) {
+          // 同一个位置,不做任何事
+          return
+        }
+
+        // 不同位置,检查用户偏好
+        const preference = getEditActionPreference()
+
+        if (preference && preference !== 'cancel') {
+          // 有保存的偏好,直接执行
+          setPendingEdit({ rowIndex, columnId })
+
+          if (preference === 'save') {
+            completeEditing().then(() => {
+              setEditingRowIndex(rowIndex)
+              onRowEditStart?.(rowIndex)
+              if (editMode === 'cell' && columnId) {
+                setEditingCellKey(`${rowIndex}-${columnId}`)
+              } else {
+                setEditingCellKey('')
+              }
+              setPendingEdit(null)
+            })
+          } else if (preference === 'discard') {
+            cancelEditing()
+            setEditingRowIndex(rowIndex)
+            onRowEditStart?.(rowIndex)
+            if (editMode === 'cell' && columnId) {
+              setEditingCellKey(`${rowIndex}-${columnId}`)
+            } else {
+              setEditingCellKey('')
+            }
+            setPendingEdit(null)
+          }
+        } else {
+          // 没有保存的偏好,显示对话框
+          setPendingEdit({ rowIndex, columnId })
+          setShowConfirmDialog(true)
+        }
+        return
+      }
+
+      // 没有正在编辑的内容,直接开始编辑
       setEditingRowIndex(rowIndex)
       onRowEditStart?.(rowIndex)
 
@@ -724,7 +857,14 @@ function ReactTable<TData>({
         setEditingCellKey('')
       }
     },
-    [rowEditingEnabled, editMode, onRowEditStart]
+    [
+      rowEditingEnabled,
+      editMode,
+      editingRowIndex,
+      editingCellKey,
+      onRowEditStart,
+      getEditActionPreference,
+    ]
   )
 
   // 取消编辑
@@ -1302,20 +1442,40 @@ function ReactTable<TData>({
     </div>
   )
 
-  // 如果启用列拖拽，用 DndContext 包装
+  // 如果启用列拖拽,用 DndContext 包装
   if (enableColumnDragging) {
     return (
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        {tableContent}
-      </DndContext>
+      <>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          {tableContent}
+        </DndContext>
+        {/* 编辑确认对话框 */}
+        {rowEditingEnabled && (
+          <EditConfirmDialog
+            isOpen={showConfirmDialog}
+            onConfirm={handleConfirmDialog}
+          />
+        )}
+      </>
     )
   }
 
-  return tableContent
+  return (
+    <>
+      {tableContent}
+      {/* 编辑确认对话框 */}
+      {rowEditingEnabled && (
+        <EditConfirmDialog
+          isOpen={showConfirmDialog}
+          onConfirm={handleConfirmDialog}
+        />
+      )}
+    </>
+  )
 }
 
 export default ReactTable
