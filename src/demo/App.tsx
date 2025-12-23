@@ -19,36 +19,92 @@ const columns: ReactTableColumnDef<Person, unknown>[] = [
     accessorKey: 'id',
     header: 'ID',
     cell: (info) => String(info.getValue()),
+    // ID 列不可编辑
+    editConfig: {
+      editable: false,
+    },
   },
   {
     id: 'name',
     accessorKey: 'name',
     header: '姓名',
     cell: (info) => String(info.getValue()),
+    editConfig: {
+      editable: true,
+      inputType: 'text',
+      placeholder: '请输入姓名',
+      validate: (value) => {
+        const name = String(value || '')
+        if (name.length < 2) return '姓名至少2个字符'
+        return true
+      },
+    },
   },
   {
     id: 'age',
     accessorKey: 'age',
     header: '年龄',
     cell: (info) => String(info.getValue()),
+    editConfig: {
+      editable: true,
+      inputType: 'number',
+      placeholder: '请输入年龄',
+      validate: (value) => {
+        const age = Number(value)
+        if (age < 18 || age > 65) return '年龄必须在18-65之间'
+        return true
+      },
+    },
   },
   {
     id: 'email',
     accessorKey: 'email',
     header: '邮箱',
     cell: (info) => String(info.getValue()),
+    editConfig: {
+      editable: true,
+      inputType: 'email',
+      placeholder: '请输入邮箱',
+      validate: (value) => {
+        const email = String(value || '')
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+          return '邮箱格式不正确'
+        return true
+      },
+    },
   },
   {
     id: 'department',
     accessorKey: 'department',
     header: '部门',
     cell: (info) => String(info.getValue()),
+    editConfig: {
+      editable: true,
+      inputType: 'select',
+      options: [
+        { label: '技术部', value: '技术部' },
+        { label: '市场部', value: '市场部' },
+        { label: '销售部', value: '销售部' },
+        { label: '人事部', value: '人事部' },
+        { label: '财务部', value: '财务部' },
+      ],
+    },
   },
   {
     id: 'salary',
     accessorKey: 'salary',
     header: '薪资',
     cell: (info) => `¥${(info.getValue() as number).toLocaleString()}`,
+    editConfig: {
+      editable: true,
+      inputType: 'number',
+      placeholder: '请输入薪资',
+      validate: (value) => {
+        const salary = Number(value)
+        if (salary < 5000) return '薪资不能低于5000'
+        return true
+      },
+    },
   },
 ]
 
@@ -78,7 +134,7 @@ const generateMockData = (count: number): Person[] => {
 }
 
 function App() {
-  const [data] = React.useState(() => generateMockData(50))
+  const [data, setData] = React.useState(() => generateMockData(50))
   const [columnOrder, setColumnOrder] = React.useState<string[]>([])
   const [currentDemo, setCurrentDemo] = React.useState<'basic' | 'valueType'>(
     'basic'
@@ -93,6 +149,27 @@ function App() {
   const handleSelectionChange = (selection: RowSelectionState) => {
     setSelectedRows(selection)
     console.log('行选择已更新:', selection)
+  }
+
+  // 单行编辑回调
+  const handleRowEdit = (rowData: Person, rowIndex: number) => {
+    console.log('单行编辑完成:', rowData, rowIndex)
+    // 更新数据
+    setData((prev) => {
+      const newData = [...prev]
+      newData[rowIndex] = rowData
+      return newData
+    })
+  }
+
+  // 单元格编辑回调
+  const handleCellEdit = (
+    rowData: Person,
+    columnId: string,
+    newValue: unknown,
+    rowIndex: number
+  ) => {
+    console.log('单元格编辑:', { rowData, columnId, newValue, rowIndex })
   }
 
   if (currentDemo === 'valueType') {
@@ -267,6 +344,89 @@ function App() {
           </div>
 
           <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">
+              整行编辑模式 - 双击行进入编辑
+            </h2>
+            <div className="mb-4 p-3 bg-teal-50 border border-teal-200 rounded">
+              <p className="text-sm text-teal-700">
+                <strong>整行编辑功能：</strong>
+              </p>
+              <ul className="text-sm text-teal-600 mt-2 space-y-1">
+                <li>• 双击行进入编辑模式</li>
+                <li>• 鼠标悬停时显示编辑按钮</li>
+                <li>• 同时编辑整行的所有可编辑列</li>
+                <li>• 支持输入验证（姓名、年龄、邮箱等）</li>
+                <li>• 按 Enter 保存，按 Esc 取消</li>
+                <li>• 操作按钮在行内，行高不变</li>
+                <li>• ID 列不可编辑，部门列使用下拉选择</li>
+              </ul>
+            </div>
+            <ReactTable
+              data={data.slice(0, 10)}
+              columns={columns}
+              features={{
+                rowEditing: true,
+                pagination: false,
+              }}
+              rowEditing={{
+                enabled: true,
+                mode: 'row',
+                editOnDoubleClick: true,
+                showEditButton: true,
+                onRowEdit: handleRowEdit,
+              }}
+              callbacks={{
+                onCellEdit: handleCellEdit,
+                onRowEditStart: (rowIndex) =>
+                  console.log('开始编辑行:', rowIndex),
+                onRowEditComplete: (rowData, rowIndex) =>
+                  console.log('编辑完成:', rowData, rowIndex),
+                onRowEditCancel: (rowIndex) =>
+                  console.log('取消编辑行:', rowIndex),
+              }}
+              storageKey="row-edit-table"
+            />
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">
+              单元格编辑模式 - 双击单元格编辑
+            </h2>
+            <div className="mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded">
+              <p className="text-sm text-indigo-700">
+                <strong>单元格编辑功能：</strong>
+              </p>
+              <ul className="text-sm text-indigo-600 mt-2 space-y-1">
+                <li>• 双击单元格进入编辑模式</li>
+                <li>• 只编辑当前单元格</li>
+                <li>• 可以单独编辑某一列的某一行</li>
+                <li>• 灵活的块编辑 - 想编辑哪个就编辑哪个</li>
+                <li>• 支持快速的单字段修改</li>
+                <li>• 操作按钮在行尾统一位置</li>
+              </ul>
+            </div>
+            <ReactTable
+              data={data.slice(0, 15)}
+              columns={columns}
+              features={{
+                rowEditing: true,
+                pagination: false,
+              }}
+              rowEditing={{
+                enabled: true,
+                mode: 'cell',
+                editOnDoubleClick: true,
+                showEditButton: false,
+                onRowEdit: handleRowEdit,
+              }}
+              callbacks={{
+                onCellEdit: handleCellEdit,
+              }}
+              storageKey="cell-edit-table"
+            />
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">功能特性说明</h2>
             <div className="space-y-4 text-sm text-gray-600">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -311,6 +471,19 @@ function App() {
                     <li>• Shift+点击范围选择</li>
                     <li>• Ctrl/Cmd+点击直接选择</li>
                     <li>• 全选/取消全选</li>
+                  </ul>
+                </div>
+                <div className="p-4 bg-gray-50 rounded">
+                  <h3 className="font-semibold text-gray-800 mb-2">
+                    行编辑功能 ✨
+                  </h3>
+                  <ul className="space-y-1">
+                    <li>• 整行编辑模式</li>
+                    <li>• 单元格编辑模式（块编辑）</li>
+                    <li>• 多种输入类型支持</li>
+                    <li>• 自定义验证规则</li>
+                    <li>• 双击触发编辑</li>
+                    <li>• 行高保持不变</li>
                   </ul>
                 </div>
                 <div className="p-4 bg-gray-50 rounded">

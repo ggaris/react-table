@@ -39,7 +39,32 @@ import {
   type ContextMenuItem,
   useContextMenu,
 } from './ContextMenu'
+import { EditableCell } from './EditableCell'
 import { type ValueType, ValueTypeRenderer } from './ValueTypeRenderer'
+
+// 编辑单元格的输入类型
+export type EditInputType =
+  | 'text'
+  | 'number'
+  | 'email'
+  | 'date'
+  | 'select'
+  | 'textarea'
+  | 'checkbox'
+
+// 单元格编辑配置
+export interface CellEditConfig<TValue = unknown> {
+  // 是否可编辑
+  editable?: boolean
+  // 输入类型
+  inputType?: EditInputType
+  // 选择框选项（当 inputType 为 'select' 时使用）
+  options?: Array<{ label: string; value: TValue }>
+  // 自定义验证函数
+  validate?: (value: TValue) => boolean | string
+  // 输入提示文本
+  placeholder?: string
+}
 
 // 扩展 ColumnDef 类型，添加 valueType 支持 - 使用交集类型避免类型冲突
 export interface ReactTableColumnDef<TData, TValue = unknown> {
@@ -55,6 +80,8 @@ export interface ReactTableColumnDef<TData, TValue = unknown> {
   // 我们扩展的字段
   valueType?: ValueType
   valueTypeOptions?: Array<{ label: string; value: TValue }>
+  // 编辑配置
+  editConfig?: CellEditConfig<TValue>
 }
 
 // 功能配置对象
@@ -67,6 +94,25 @@ export interface TableFeatures {
   autoFitColumns?: boolean
   contextMenu?: boolean
   rowSelection?: boolean
+  rowEditing?: boolean // 行编辑功能
+}
+
+// 编辑模式类型
+export type EditMode = 'cell' | 'row' // 单元格编辑 | 整行编辑
+
+// 行编辑配置对象
+export interface RowEditingConfig<TData = unknown> {
+  enabled?: boolean
+  // 编辑模式：cell - 单元格编辑（可以只编辑某些单元格），row - 整行编辑
+  mode?: EditMode
+  // 编辑完成回调 - 整行编辑
+  onRowEdit?: (rowData: TData, rowIndex: number) => void | Promise<void>
+  // 编辑取消回调
+  onEditCancel?: (rowIndex?: number) => void
+  // 是否在双击时进入编辑模式
+  editOnDoubleClick?: boolean
+  // 是否显示编辑按钮（在行上悬停时显示）
+  showEditButton?: boolean
 }
 
 // 分页配置对象
@@ -101,10 +147,20 @@ export interface ContextMenuConfig {
 }
 
 // 事件回调配置对象
-export interface TableCallbacks {
+export interface TableCallbacks<TData = unknown> {
   onColumnOrderChange?: (columnOrder: string[]) => void
   onColumnSizingChange?: (columnSizing: ColumnSizingState) => void
   onColumnVisibilityChange?: (columnVisibility: VisibilityState) => void
+  // 编辑相关回调
+  onCellEdit?: (
+    rowData: TData,
+    columnId: string,
+    newValue: unknown,
+    rowIndex: number
+  ) => void | Promise<void>
+  onRowEditStart?: (rowIndex: number) => void
+  onRowEditComplete?: (rowData: TData, rowIndex: number) => void | Promise<void>
+  onRowEditCancel?: (rowIndex: number) => void
   // 未来可扩展其他回调函数
 }
 
@@ -114,9 +170,10 @@ export interface ReactTableProps<TData> {
   className?: string
   features?: TableFeatures
   pagination?: PaginationConfig
-  callbacks?: TableCallbacks
+  callbacks?: TableCallbacks<TData>
   contextMenu?: ContextMenuConfig
   rowSelection?: RowSelectionConfig<TData>
+  rowEditing?: RowEditingConfig<TData>
   defaultColumnVisibility?: VisibilityState
   // 新增属性：localStorage 的 key，用于保存列可见性状态
   storageKey?: string
@@ -187,8 +244,8 @@ function DraggableTableHeader<TData>({
             {enableSorting && header.column.getCanSort() && (
               <span className="ml-2">
                 {{
-                  asc: '↑',
-                  desc: '↓',
+                  asc: '⬆️',
+                  desc: '⬇️',
                 }[header.column.getIsSorted() as string] ?? '↕'}
               </span>
             )}
@@ -281,6 +338,7 @@ function ReactTable<TData>({
   callbacks = {},
   contextMenu: contextMenuConfig = {},
   rowSelection: rowSelectionConfig = {},
+  rowEditing: rowEditingConfig = {},
   defaultColumnVisibility = {},
   storageKey,
   defaultVisibleColumns,
@@ -295,6 +353,7 @@ function ReactTable<TData>({
     autoFitColumns: enableAutoFitColumns = true,
     contextMenu: enableContextMenu = true,
     rowSelection: enableRowSelection = false,
+    rowEditing: enableRowEditing = false,
   } = features
 
   const { pageSize = 10 } = paginationConfig
@@ -302,6 +361,10 @@ function ReactTable<TData>({
     onColumnOrderChange,
     onColumnSizingChange,
     onColumnVisibilityChange,
+    onCellEdit,
+    onRowEditStart,
+    onRowEditComplete,
+    onRowEditCancel,
   } = callbacks
 
   // 行选择配置
@@ -311,6 +374,16 @@ function ReactTable<TData>({
     onSelectionChange,
     getRowId,
   } = rowSelectionConfig
+
+  // 行编辑配置
+  const {
+    enabled: rowEditingEnabled = enableRowEditing,
+    mode: editMode = 'row',
+    onRowEdit,
+    onEditCancel,
+    editOnDoubleClick = true,
+    showEditButton = true,
+  } = rowEditingConfig
 
   // 右键菜单配置
   const {
@@ -381,6 +454,16 @@ function ReactTable<TData>({
   // 用于记录最后点击的行索引，支持 Shift 范围选择
   const [lastClickedRowIndex, setLastClickedRowIndex] =
     React.useState<number>(-1)
+
+  // 编辑状态
+  const [editingRowIndex, setEditingRowIndex] = React.useState<number>(-1)
+  const [editingCellKey, setEditingCellKey] = React.useState<string>('') // 格式: "rowIndex-columnId"
+  const [editedData, setEditedData] = React.useState<TData[]>(data)
+
+  // 当 data prop 变化时，更新 editedData
+  React.useEffect(() => {
+    setEditedData(data)
+  }, [data])
 
   // 配置拖拽传感器
   const sensors = useSensors(
@@ -623,6 +706,90 @@ function ReactTable<TData>({
       }
     },
     [rowSelectionEnabled, handleRowClick]
+  )
+
+  // 开始编辑行或单元格
+  const startEditing = React.useCallback(
+    (rowIndex: number, columnId?: string) => {
+      if (!rowEditingEnabled) return
+
+      setEditingRowIndex(rowIndex)
+      onRowEditStart?.(rowIndex)
+
+      // 如果是单元格编辑模式且提供了列ID
+      if (editMode === 'cell' && columnId) {
+        setEditingCellKey(`${rowIndex}-${columnId}`)
+      } else {
+        // 整行编辑模式
+        setEditingCellKey('')
+      }
+    },
+    [rowEditingEnabled, editMode, onRowEditStart]
+  )
+
+  // 取消编辑
+  const cancelEditing = React.useCallback(() => {
+    setEditingRowIndex(-1)
+    setEditingCellKey('')
+    setEditedData(data) // 恢复原始数据
+    onEditCancel?.()
+    onRowEditCancel?.(editingRowIndex)
+  }, [data, editingRowIndex, onEditCancel, onRowEditCancel])
+
+  // 处理单元格值变化
+  const handleCellValueChange = React.useCallback(
+    async (columnId: string, value: unknown, rowIndex: number) => {
+      // 更新 editedData
+      setEditedData((prev) => {
+        const newData = [...prev]
+        newData[rowIndex] = {
+          ...newData[rowIndex],
+          [columnId]: value,
+        }
+        return newData
+      })
+
+      // 调用单元格编辑回调
+      await onCellEdit?.(editedData[rowIndex], columnId, value, rowIndex)
+    },
+    [editedData, onCellEdit]
+  )
+
+  // 完成编辑
+  const completeEditing = React.useCallback(async () => {
+    if (editingRowIndex < 0) return
+
+    try {
+      const rowData = editedData[editingRowIndex]
+      await onRowEdit?.(rowData, editingRowIndex)
+      await onRowEditComplete?.(rowData, editingRowIndex)
+
+      // 清除编辑状态
+      setEditingRowIndex(-1)
+      setEditingCellKey('')
+    } catch (error) {
+      console.error('保存编辑失败:', error)
+    }
+  }, [editingRowIndex, editedData, onRowEdit, onRowEditComplete])
+
+  // 处理行双击事件
+  const handleRowDoubleClick = React.useCallback(
+    (rowIndex: number) => {
+      if (rowEditingEnabled && editOnDoubleClick) {
+        startEditing(rowIndex)
+      }
+    },
+    [rowEditingEnabled, editOnDoubleClick, startEditing]
+  )
+
+  // 处理单元格双击事件
+  const handleCellDoubleClick = React.useCallback(
+    (rowIndex: number, columnId: string) => {
+      if (rowEditingEnabled && editOnDoubleClick && editMode === 'cell') {
+        startEditing(rowIndex, columnId)
+      }
+    },
+    [rowEditingEnabled, editOnDoubleClick, editMode, startEditing]
   )
 
   // 处理列拖拽结束事件
@@ -947,56 +1114,133 @@ function ReactTable<TData>({
             ))}
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {table.getRowModel().rows.map((row, rowIndex) => (
-              <tr
-                key={row.id}
-                className={`hover:bg-gray-50 ${
-                  rowSelectionEnabled && row.getIsSelected()
-                    ? 'bg-blue-50 border-blue-200'
-                    : ''
-                } ${rowSelectionEnabled ? 'cursor-pointer select-none' : ''}`}
-                onClick={(e) => handleRowClick(e, row, rowIndex)}
-                onKeyDown={(e) => handleRowKeyDown(e, row, rowIndex)}
-                onContextMenu={(e) =>
-                  handleRowContextMenu(e, row.original, row.index)
-                }
-                tabIndex={rowSelectionEnabled ? 0 : undefined}
-                role={rowSelectionEnabled ? 'button' : undefined}
-                aria-selected={
-                  rowSelectionEnabled ? row.getIsSelected() : undefined
-                }
-              >
-                {row.getVisibleCells().map((cell) => {
-                  const column = cell.column
-                    .columnDef as ReactTableColumnDef<TData>
-                  const cellValue = cell.getValue()
+            {table.getRowModel().rows.map((row, rowIndex) => {
+              const isEditing = editingRowIndex === rowIndex
 
-                  return (
-                    <td
-                      key={cell.id}
-                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                      style={{
-                        width: cell.column.getSize(),
-                        minWidth: cell.column.getSize(),
-                      }}
-                    >
-                      {column.valueType ? (
-                        <ValueTypeRenderer
-                          value={cellValue}
-                          valueType={column.valueType}
-                          options={column.valueTypeOptions}
-                        />
-                      ) : (
-                        flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )
+              return (
+                <tr
+                  key={row.id}
+                  className={`hover:bg-gray-50 ${
+                    rowSelectionEnabled && row.getIsSelected()
+                      ? 'bg-blue-50 border-blue-200'
+                      : ''
+                  } ${isEditing ? 'bg-yellow-50 border-yellow-200' : ''} ${
+                    rowSelectionEnabled ? 'cursor-pointer select-none' : ''
+                  } group relative`}
+                  onClick={(e) => handleRowClick(e, row, rowIndex)}
+                  onDoubleClick={() => handleRowDoubleClick(rowIndex)}
+                  onKeyDown={(e) => handleRowKeyDown(e, row, rowIndex)}
+                  onContextMenu={(e) =>
+                    handleRowContextMenu(e, row.original, row.index)
+                  }
+                  tabIndex={rowSelectionEnabled ? 0 : undefined}
+                  role={rowSelectionEnabled ? 'button' : undefined}
+                  aria-selected={
+                    rowSelectionEnabled ? row.getIsSelected() : undefined
+                  }
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const column = cell.column
+                      .columnDef as ReactTableColumnDef<TData>
+                    const cellValue = cell.getValue()
+                    const columnId = cell.column.id
+                    const cellKey = `${rowIndex}-${columnId}`
+
+                    // 判断单元格是否可编辑
+                    const isCellEditable =
+                      rowEditingEnabled &&
+                      column.editConfig?.editable !== false &&
+                      ((editMode === 'row' && isEditing) ||
+                        (editMode === 'cell' && editingCellKey === cellKey))
+
+                    return (
+                      <td
+                        key={cell.id}
+                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                        style={{
+                          width: cell.column.getSize(),
+                          minWidth: cell.column.getSize(),
+                        }}
+                        onDoubleClick={(e) => {
+                          if (editMode === 'cell') {
+                            e.stopPropagation()
+                            handleCellDoubleClick(rowIndex, columnId)
+                          }
+                        }}
+                      >
+                        {isCellEditable && column.editConfig ? (
+                          <EditableCell
+                            value={cellValue}
+                            columnId={columnId}
+                            rowIndex={rowIndex}
+                            isEditing={true}
+                            editConfig={column.editConfig}
+                            onValueChange={handleCellValueChange}
+                            onEditComplete={completeEditing}
+                            onEditCancel={cancelEditing}
+                          />
+                        ) : column.valueType ? (
+                          <ValueTypeRenderer
+                            value={cellValue}
+                            valueType={column.valueType}
+                            options={column.valueTypeOptions}
+                          />
+                        ) : (
+                          flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )
+                        )}
+                      </td>
+                    )
+                  })}
+                  {/* 编辑按钮列 - 编辑和操作按钮都放在同一列 */}
+                  {rowEditingEnabled && (
+                    <td className="px-2 py-2 whitespace-nowrap text-sm w-32">
+                      {!isEditing && showEditButton && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            startEditing(rowIndex)
+                          }}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+                          title="编辑"
+                        >
+                          ✏️ 编辑
+                        </button>
+                      )}
+                      {isEditing && (
+                        <div className="flex gap-1">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              completeEditing()
+                            }}
+                            className="px-2 py-1 text-xs text-white bg-green-500 rounded hover:bg-green-600"
+                            title="保存"
+                          >
+                            ✓ 保存
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              cancelEditing()
+                            }}
+                            className="px-2 py-1 text-xs text-white bg-gray-500 rounded hover:bg-gray-600"
+                            title="取消"
+                          >
+                            ✗ 取消
+                          </button>
+                        </div>
                       )}
                     </td>
-                  )
-                })}
-              </tr>
-            ))}
+                  )}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>

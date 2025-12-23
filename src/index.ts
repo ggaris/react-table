@@ -9,6 +9,10 @@ export type {
   TableCallbacks,
   ContextMenuConfig,
   RowSelectionConfig,
+  RowEditingConfig,
+  EditInputType,
+  EditMode,
+  CellEditConfig,
 } from './components/ReactTable'
 export type {
   ColumnSizingState,
@@ -25,3 +29,4 @@ export {
   type ContextMenuItem,
   type ContextMenuProps,
 } from './components/ContextMenu'
+export { EditableCell } from './components/EditableCell'
