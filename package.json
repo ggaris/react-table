@@ -1,0 +1,23 @@
+{
+	"name": "my-table",
+	"module": "index.ts",
+	"type": "module",
+	"scripts": {
+		"dev": "bun --hot ./index.ts",
+		"build": "bun run ./build.ts"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/react": "^19.2.7",
+		"@types/react-dom": "^19.0.2"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"private": true,
+	"dependencies": {
+		"@tanstack/react-table": "^8.21.3",
+		"react": "^19.2.3",
+		"react-dom": "^19.2.3"
+	}
+}
