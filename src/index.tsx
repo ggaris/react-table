@@ -7,7 +7,7 @@ function App() {
 	return (
 		<div className="app">
 			<header className="header">
-				<h1>React Table 示例</h1>
+				<h1 className="text-amber-200">React Table 示例</h1>
 				<p>使用 Bun + React + TanStack Table 构建</p>
 			</header>
 			<main className="main">
