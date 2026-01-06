@@ -8,7 +8,7 @@ interface CheckboxProps {
 }
 
 /**
- * Checkbox 组件
+ * Checkbox 组件 - 优化的企业级复选框
  */
 export function Checkbox({
 	checked,
@@ -25,14 +25,16 @@ export function Checkbox({
 	}, [indeterminate]);
 
 	return (
-		<input
-			ref={ref}
-			type="checkbox"
-			checked={checked}
-			onChange={(e) => onChange(e.target.checked)}
-			disabled={disabled}
-			onClick={(e) => e.stopPropagation()}
-			className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-		/>
+		<label className="inline-flex items-center justify-center cursor-pointer">
+			<input
+				ref={ref}
+				type="checkbox"
+				checked={checked}
+				onChange={(e) => onChange(e.target.checked)}
+				disabled={disabled}
+				onClick={(e) => e.stopPropagation()}
+				className="w-4 h-4 text-blue-600 border-2 border-gray-300 rounded transition-all duration-150 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 hover:border-blue-500 checked:bg-blue-600 checked:border-blue-600 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+			/>
+		</label>
 	);
 }

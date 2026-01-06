@@ -6,13 +6,21 @@ interface ColumnFilterProps<TData, TValue> {
 }
 
 /**
- * 列筛选组件,支持文本输入筛选
+ * 列筛选组件 - 优化的企业级筛选交互
  */
 export function ColumnFilter<TData, TValue>({
 	column,
 }: ColumnFilterProps<TData, TValue>) {
 	const [isOpen, setIsOpen] = React.useState(false);
 	const filterValue = (column.getFilterValue() ?? "") as string;
+	const inputRef = React.useRef<HTMLInputElement>(null);
+
+	// 打开时自动聚焦输入框
+	React.useEffect(() => {
+		if (isOpen && inputRef.current) {
+			inputRef.current.focus();
+		}
+	}, [isOpen]);
 
 	if (!column.getCanFilter()) {
 		return null;
@@ -27,8 +35,10 @@ export function ColumnFilter<TData, TValue>({
 					e.stopPropagation();
 					setIsOpen(!isOpen);
 				}}
-				className={`p-1 rounded hover:bg-gray-200 transition-colors ${
-					filterValue ? "text-blue-600" : "text-gray-400"
+				className={`p-1.5 rounded-md transition-all duration-150 ${
+					filterValue
+						? "text-blue-600 bg-blue-50 hover:bg-blue-100"
+						: "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
 				}`}
 				title="筛选"
 			>
@@ -45,6 +55,9 @@ export function ColumnFilter<TData, TValue>({
 						d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
 					/>
 				</svg>
+				{filterValue && (
+					<span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-600 rounded-full" />
+				)}
 			</button>
 
 			{/* 筛选弹出框 */}
@@ -54,30 +67,48 @@ export function ColumnFilter<TData, TValue>({
 					<div
 						className="fixed inset-0 z-10"
 						onClick={() => setIsOpen(false)}
+						onKeyDown={(e) => {
+							if (e.key === "Escape") {
+								setIsOpen(false);
+							}
+						}}
 					/>
 
 					{/* 筛选输入框 */}
-					<div className="absolute top-full left-0 mt-1 z-20 bg-white border border-gray-300 rounded shadow-lg p-2 min-w-[200px]">
-						<input
-							type="text"
-							value={filterValue}
-							onChange={(e) => column.setFilterValue(e.target.value)}
-							placeholder="输入关键词筛选..."
-							className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-							onClick={(e) => e.stopPropagation()}
-						/>
-						{filterValue && (
-							<button
-								type="button"
-								onClick={(e) => {
+					<div className="absolute top-full right-0 mt-2 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[220px] animate-in fade-in duration-150">
+						<div className="space-y-2">
+							<label className="block text-xs font-semibold text-gray-700 mb-1">
+								筛选条件
+							</label>
+							<input
+								ref={inputRef}
+								type="text"
+								value={filterValue}
+								onChange={(e) => column.setFilterValue(e.target.value)}
+								placeholder="输入关键词..."
+								className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-150"
+								onClick={(e) => e.stopPropagation()}
+								onKeyDown={(e) => {
 									e.stopPropagation();
-									column.setFilterValue("");
+									if (e.key === "Escape") {
+										setIsOpen(false);
+									}
 								}}
-								className="mt-2 w-full px-2 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded"
-							>
-								清除筛选
-							</button>
-						)}
+							/>
+							{filterValue && (
+								<button
+									type="button"
+									onClick={(e) => {
+										e.stopPropagation();
+										column.setFilterValue("");
+										setIsOpen(false);
+									}}
+									className="w-full px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors duration-150"
+								>
+									清除筛选
+								</button>
+							)}
+						</div>
 					</div>
 				</>
 			)}

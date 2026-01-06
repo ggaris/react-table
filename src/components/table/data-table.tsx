@@ -164,14 +164,15 @@ export function DataTable<TData>({
 			)}
 
 			{/* 表格容器 - 支持水平滚动 */}
-			<div className="overflow-x-auto border border-gray-200 rounded-lg">
-				<table className="w-full border-collapse bg-white">
-					<thead>
+			<div className="relative overflow-hidden border border-gray-200 rounded-lg shadow-sm bg-white">
+				<div className="overflow-x-auto">
+					<table className="w-full border-collapse">
+					<thead className="bg-gradient-to-b from-gray-50 to-gray-100">
 						{table.getHeaderGroups().map((headerGroup) => (
-							<tr key={headerGroup.id} className="border-b border-gray-200 bg-gray-50">
+							<tr key={headerGroup.id} className="border-b-2 border-gray-300">
 								{/* 行选择列 */}
 								{enableRowSelection && (
-									<th className="px-4 py-3 w-12">
+									<th className="px-6 py-4 w-16 text-center sticky left-0 bg-gradient-to-b from-gray-50 to-gray-100">
 										<Checkbox
 											checked={table.getIsAllRowsSelected()}
 											indeterminate={table.getIsSomeRowsSelected()}
@@ -184,7 +185,7 @@ export function DataTable<TData>({
 									<th
 										key={header.id}
 										colSpan={header.colSpan}
-										className="px-4 py-3 text-left text-sm font-semibold text-gray-900"
+										className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider"
 									>
 										<div className="flex items-center gap-2">
 											{/* 列标题 */}
@@ -197,9 +198,9 @@ export function DataTable<TData>({
 																header.column.toggleSorting();
 															}
 														}}
-														className={`flex items-center gap-2 ${
+														className={`flex items-center gap-2 transition-colors duration-150 ${
 															enableSorting && header.column.getCanSort()
-																? "hover:text-gray-700 cursor-pointer"
+																? "hover:text-gray-900 cursor-pointer group"
 																: ""
 														}`}
 													>
@@ -209,7 +210,13 @@ export function DataTable<TData>({
 														)}
 														{/* 排序图标 */}
 														{enableSorting && header.column.getCanSort() && (
-															<span className="text-gray-400">
+															<span
+																className={`transition-all duration-200 ${
+																	header.column.getIsSorted()
+																		? "text-blue-600"
+																		: "text-gray-400 group-hover:text-gray-600"
+																}`}
+															>
 																{header.column.getIsSorted() === "asc" ? (
 																	<svg
 																		className="w-4 h-4"
@@ -217,6 +224,7 @@ export function DataTable<TData>({
 																		stroke="currentColor"
 																		viewBox="0 0 24 24"
 																	>
+																		<title>升序排序</title>
 																		<path
 																			strokeLinecap="round"
 																			strokeLinejoin="round"
@@ -231,6 +239,7 @@ export function DataTable<TData>({
 																		stroke="currentColor"
 																		viewBox="0 0 24 24"
 																	>
+																		<title>降序排序</title>
 																		<path
 																			strokeLinecap="round"
 																			strokeLinejoin="round"
@@ -245,6 +254,7 @@ export function DataTable<TData>({
 																		stroke="currentColor"
 																		viewBox="0 0 24 24"
 																	>
+																		<title>可排序</title>
 																		<path
 																			strokeLinecap="round"
 																			strokeLinejoin="round"
@@ -282,12 +292,31 @@ export function DataTable<TData>({
 							<tr>
 								<td
 									colSpan={columns.length + (enableRowSelection ? 1 : 0)}
-									className="px-4 py-8 text-center"
+									className="px-6 py-16 text-center"
 								>
 									{emptyState || (
-										<div className="text-gray-500">
-											<div className="text-4xl mb-2">📋</div>
-											<div>暂无数据</div>
+										<div className="flex flex-col items-center justify-center">
+											<div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+												<svg
+													className="w-8 h-8 text-gray-400"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+												>
+													<path
+														strokeLinecap="round"
+														strokeLinejoin="round"
+														strokeWidth={1.5}
+														d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+													/>
+												</svg>
+											</div>
+											<h3 className="text-base font-semibold text-gray-900 mb-1">
+												暂无数据
+											</h3>
+											<p className="text-sm text-gray-500">
+												当前表格中没有可显示的数据
+											</p>
 										</div>
 									)}
 								</td>
@@ -299,15 +328,19 @@ export function DataTable<TData>({
 									key={row.id}
 									onClick={() => handleRowClick(row.id, row.original)}
 									className={`
-										border-b border-gray-200 last:border-b-0
-										hover:bg-gray-50 transition-colors
-										${enableRowSelection && row.getIsSelected() ? "bg-blue-50" : ""}
-										${enableRowSelection || onRowClick ? "cursor-pointer" : ""}
+										border-b border-gray-100 last:border-b-0
+										transition-all duration-150 ease-in-out
+										${
+											enableRowSelection && row.getIsSelected()
+												? "bg-blue-50/80 hover:bg-blue-100/80 shadow-inner"
+												: "bg-white hover:bg-gray-50/80 hover:shadow-sm"
+										}
+										${enableRowSelection || onRowClick ? "cursor-pointer active:scale-[0.995]" : ""}
 									`}
 								>
 									{/* 行选择 Checkbox */}
 									{enableRowSelection && (
-										<td className="px-4 py-3 w-12">
+										<td className="px-6 py-4 w-16 text-center sticky left-0 bg-inherit">
 											<Checkbox
 												checked={row.getIsSelected()}
 												onChange={row.getToggleSelectedHandler()}
@@ -317,7 +350,7 @@ export function DataTable<TData>({
 
 									{/* 数据单元格 */}
 									{row.getVisibleCells().map((cell) => (
-										<td key={cell.id} className="px-4 py-3 text-sm text-gray-700">
+										<td key={cell.id} className="px-6 py-4 text-sm text-gray-900">
 											{flexRender(cell.column.columnDef.cell, cell.getContext())}
 										</td>
 									))}
@@ -327,71 +360,91 @@ export function DataTable<TData>({
 					</tbody>
 				</table>
 			</div>
+			</div>
 
 			{/* 分页控件 */}
 			{enablePagination && !loading && data.length > 0 && (
-				<div className="flex items-center justify-between px-2">
-					<div className="flex items-center gap-2">
-						<span className="text-sm text-gray-700">
-							共 {table.getFilteredRowModel().rows.length} 条数据
-							{Object.keys(rowSelection).length > 0 && (
-								<span className="ml-2 text-blue-600">
-									已选择 {Object.keys(rowSelection).length} 条
-								</span>
-							)}
+				<div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+					{/* 信息显示 */}
+					<div className="flex items-center gap-4 text-sm">
+						<span className="text-gray-600">
+							共 <span className="font-semibold text-gray-900">{table.getFilteredRowModel().rows.length}</span> 条数据
 						</span>
+						{Object.keys(rowSelection).length > 0 && (
+							<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md font-medium">
+								<svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+									<path
+										fillRule="evenodd"
+										d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+										clipRule="evenodd"
+									/>
+								</svg>
+								已选 {Object.keys(rowSelection).length} 条
+							</span>
+						)}
 					</div>
 
-					<div className="flex items-center gap-2">
-						{/* 跳转首页 */}
-						<button
-							type="button"
-							onClick={() => table.setPageIndex(0)}
-							disabled={!table.getCanPreviousPage()}
-							className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-						>
-							{"<<"}
-						</button>
+					{/* 分页控制 */}
+					<div className="flex flex-wrap items-center gap-2">
+						{/* 分页按钮组 */}
+						<div className="flex items-center gap-1">
+							<button
+								type="button"
+								onClick={() => table.setPageIndex(0)}
+								disabled={!table.getCanPreviousPage()}
+								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150"
+								title="首页"
+							>
+								<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+								</svg>
+							</button>
 
-						{/* 上一页 */}
-						<button
-							type="button"
-							onClick={() => table.previousPage()}
-							disabled={!table.getCanPreviousPage()}
-							className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-						>
-							{"<"}
-						</button>
+							<button
+								type="button"
+								onClick={() => table.previousPage()}
+								disabled={!table.getCanPreviousPage()}
+								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150"
+								title="上一页"
+							>
+								<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+								</svg>
+							</button>
 
-						{/* 页码显示 */}
-						<span className="text-sm text-gray-700">
-							第 {table.getState().pagination.pageIndex + 1} 页,共{" "}
-							{table.getPageCount()} 页
-						</span>
+							{/* 页码显示 */}
+							<span className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-md min-w-[100px] text-center">
+								{table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+							</span>
 
-						{/* 下一页 */}
-						<button
-							type="button"
-							onClick={() => table.nextPage()}
-							disabled={!table.getCanNextPage()}
-							className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-						>
-							{">"}
-						</button>
+							<button
+								type="button"
+								onClick={() => table.nextPage()}
+								disabled={!table.getCanNextPage()}
+								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150"
+								title="下一页"
+							>
+								<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+								</svg>
+							</button>
 
-						{/* 跳转末页 */}
-						<button
-							type="button"
-							onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-							disabled={!table.getCanNextPage()}
-							className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-						>
-							{">>"}
-						</button>
+							<button
+								type="button"
+								onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+								disabled={!table.getCanNextPage()}
+								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150"
+								title="末页"
+							>
+								<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+								</svg>
+							</button>
+						</div>
 
-						{/* 跳转到指定页 */}
-						<span className="flex items-center gap-1 text-sm">
-							跳至
+						{/* 跳转页码 */}
+						<div className="flex items-center gap-1.5 text-sm">
+							<span className="text-gray-600">跳至</span>
 							<input
 								type="number"
 								min="1"
@@ -401,18 +454,18 @@ export function DataTable<TData>({
 									const page = e.target.value ? Number(e.target.value) - 1 : 0;
 									table.setPageIndex(page);
 								}}
-								className="w-16 px-2 py-1 border border-gray-300 rounded"
+								className="w-16 px-2 py-1.5 text-sm text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-150"
 							/>
-							页
-						</span>
+							<span className="text-gray-600">页</span>
+						</div>
 
-						{/* 每页条数选择 */}
+						{/* 每页条数 */}
 						<select
 							value={table.getState().pagination.pageSize}
 							onChange={(e) => {
 								table.setPageSize(Number(e.target.value));
 							}}
-							className="px-2 py-1 border border-gray-300 rounded"
+							className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:bg-gray-50 transition-all duration-150 cursor-pointer"
 						>
 							{pageSizeOptions.map((pageSize) => (
 								<option key={pageSize} value={pageSize}>
