@@ -1,9 +1,11 @@
 import React from "react";
+import type { DensityType } from "./toolbar";
 
 interface TableSkeletonProps {
 	rows?: number;
 	columns?: number;
 	hasSelection?: boolean;
+	density?: DensityType;
 }
 
 /**
@@ -13,7 +15,14 @@ export function TableSkeleton({
 	rows = 5,
 	columns = 4,
 	hasSelection = false,
+	density = "default",
 }: TableSkeletonProps) {
+	const densityPadding = {
+		compact: "px-4 py-2",
+		default: "px-6 py-4",
+		comfortable: "px-8 py-6",
+	};
+
 	return (
 		<>
 			{Array.from({ length: rows }).map((_, rowIndex) => (
@@ -26,14 +35,14 @@ export function TableSkeleton({
 				>
 					{/* 选择列骨架 */}
 					{hasSelection && (
-						<td className="px-6 py-4 w-16 text-center">
+						<td className={`${densityPadding[density]} w-16 text-center`}>
 							<div className="inline-block w-4 h-4 bg-gray-200 rounded" />
 						</td>
 					)}
 
 					{/* 数据列骨架 */}
 					{Array.from({ length: columns }).map((_, colIndex) => (
-						<td key={colIndex} className="px-6 py-4">
+						<td key={colIndex} className={densityPadding[density]}>
 							<div className="flex items-center">
 								<div
 									className="h-4 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded"

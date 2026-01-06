@@ -5,6 +5,7 @@ interface CheckboxProps {
 	indeterminate?: boolean;
 	onChange: (checked: boolean) => void;
 	disabled?: boolean;
+	ariaLabel?: string;
 }
 
 /**
@@ -15,6 +16,7 @@ export function Checkbox({
 	indeterminate = false,
 	onChange,
 	disabled = false,
+	ariaLabel,
 }: CheckboxProps) {
 	const ref = React.useRef<HTMLInputElement>(null);
 
@@ -33,7 +35,8 @@ export function Checkbox({
 				onChange={(e) => onChange(e.target.checked)}
 				disabled={disabled}
 				onClick={(e) => e.stopPropagation()}
-				className="w-4 h-4 text-blue-600 border-2 border-gray-300 rounded transition-all duration-150 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 hover:border-blue-500 checked:bg-blue-600 checked:border-blue-600 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer"
+				aria-label={ariaLabel}
+				className="w-4 h-4 text-blue-600 border-2 border-gray-300 rounded transition-all duration-150 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 hover:border-blue-500 checked:bg-blue-600 checked:border-blue-600 disabled:cursor-not-allowed disabled:opacity-40 cursor-pointer motion-reduce:transition-none"
 			/>
 		</label>
 	);

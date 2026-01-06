@@ -5,3 +5,4 @@ export { ColumnFilter } from "./column-filter";
 export { ColumnHeader } from "./column-header";
 export { ColumnVisibility } from "./column-visibility";
 export { TableSkeleton } from "./table-skeleton";
+export { ToolBar, type DensityType } from "./toolbar";

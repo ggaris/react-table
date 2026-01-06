@@ -25,7 +25,10 @@ export function ColumnVisibility<TData>({ table }: ColumnVisibilityProps<TData>)
 			<button
 				type="button"
 				onClick={() => setIsOpen(!isOpen)}
-				className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 flex items-center gap-2 transition-all duration-150 shadow-sm"
+				className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+				title="列设置"
+				aria-label="管理列可见性"
+				aria-expanded={isOpen}
 			>
 				<svg
 					className="w-4 h-4"
@@ -40,10 +43,6 @@ export function ColumnVisibility<TData>({ table }: ColumnVisibilityProps<TData>)
 						d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
 					/>
 				</svg>
-				<span>列配置</span>
-				<span className="text-xs text-gray-500">
-					({visibleCount}/{totalCount})
-				</span>
 			</button>
 
 			{/* 列配置弹出框 */}
@@ -77,13 +76,14 @@ export function ColumnVisibility<TData>({ table }: ColumnVisibilityProps<TData>)
 									return (
 										<label
 											key={column.id}
-											className="flex items-center gap-2.5 cursor-pointer hover:bg-blue-50/50 px-3 py-2 rounded-md transition-colors duration-150 group"
+											className="flex items-center gap-2.5 cursor-pointer hover:bg-blue-50/50 px-3 py-2 rounded-md transition-colors duration-150 motion-reduce:transition-none group"
 										>
 											<input
 												type="checkbox"
 												checked={column.getIsVisible()}
 												onChange={column.getToggleVisibilityHandler()}
-												className="w-4 h-4 text-blue-600 border-2 border-gray-300 rounded transition-all duration-150 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 hover:border-blue-500 checked:bg-blue-600 checked:border-blue-600 cursor-pointer"
+												className="w-4 h-4 text-blue-600 border-2 border-gray-300 rounded transition-all duration-150 motion-reduce:transition-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 hover:border-blue-500 checked:bg-blue-600 checked:border-blue-600 cursor-pointer"
+												aria-label={`切换 ${typeof column.columnDef.header === "string" ? column.columnDef.header : column.id} 列的可见性`}
 											/>
 											<span className="text-sm text-gray-700 group-hover:text-gray-900 font-medium">
 												{typeof column.columnDef.header === "string"
@@ -100,14 +100,16 @@ export function ColumnVisibility<TData>({ table }: ColumnVisibilityProps<TData>)
 							<button
 								type="button"
 								onClick={() => table.toggleAllColumnsVisible(true)}
-								className="flex-1 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors duration-150"
+								className="flex-1 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+								aria-label="全选所有列"
 							>
 								全选
 							</button>
 							<button
 								type="button"
 								onClick={() => table.toggleAllColumnsVisible(false)}
-								className="flex-1 px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors duration-150"
+								className="flex-1 px-3 py-1.5 text-xs font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+								aria-label="取消选择所有列"
 							>
 								全不选
 							</button>
