@@ -1,5 +1,6 @@
-import React from "react";
 import type { Table } from "@tanstack/react-table";
+import React from "react";
+import { SettingSvg } from "../svg/setting";
 
 interface ColumnVisibilityProps<TData> {
 	table: Table<TData>;
@@ -8,7 +9,9 @@ interface ColumnVisibilityProps<TData> {
 /**
  * 列可见性配置组件 - 优化的企业级列管理
  */
-export function ColumnVisibility<TData>({ table }: ColumnVisibilityProps<TData>) {
+export function ColumnVisibility<TData>({
+	table,
+}: ColumnVisibilityProps<TData>) {
 	const [isOpen, setIsOpen] = React.useState(false);
 
 	const visibleCount = table
@@ -30,19 +33,7 @@ export function ColumnVisibility<TData>({ table }: ColumnVisibilityProps<TData>)
 				aria-label="管理列可见性"
 				aria-expanded={isOpen}
 			>
-				<svg
-					className="w-4 h-4"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-				>
-					<path
-						strokeLinecap="round"
-						strokeLinejoin="round"
-						strokeWidth={2}
-						d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-					/>
-				</svg>
+				<SettingSvg />
 			</button>
 
 			{/* 列配置弹出框 */}
@@ -60,7 +51,7 @@ export function ColumnVisibility<TData>({ table }: ColumnVisibilityProps<TData>)
 					/>
 
 					{/* 配置面板 */}
-					<div className="absolute top-full right-0 mt-2 z-20 bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[240px] animate-in fade-in duration-150">
+					<div className="absolute top-full right-0 mt-2 z-20 bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-60 animate-in fade-in duration-150">
 						<div className="flex items-center justify-between mb-3">
 							<h3 className="text-sm font-bold text-gray-900">显示列</h3>
 							<span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
@@ -68,7 +59,7 @@ export function ColumnVisibility<TData>({ table }: ColumnVisibilityProps<TData>)
 							</span>
 						</div>
 
-						<div className="space-y-1 max-h-[300px] overflow-y-auto custom-scrollbar">
+						<div className="space-y-1 max-h-75 overflow-y-auto custom-scrollbar">
 							{table
 								.getAllLeafColumns()
 								.filter((column) => column.getCanHide())

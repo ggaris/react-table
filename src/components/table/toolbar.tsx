@@ -1,5 +1,5 @@
-import React from "react";
 import type { Table } from "@tanstack/react-table";
+import React from "react";
 import { ColumnVisibility } from "./column-visibility";
 
 export type DensityType = "compact" | "default" | "comfortable";
@@ -100,7 +100,7 @@ export function ToolBar<TData>({
 								className="fixed inset-0 z-10"
 								onClick={() => setDensityOpen(false)}
 							/>
-							<div className="absolute right-0 top-full mt-2 z-20 bg-white border border-gray-200 rounded-lg shadow-xl p-2 min-w-[140px] animate-in fade-in duration-150">
+							<div className="absolute right-0 top-full mt-2 z-20 bg-white border border-gray-200 rounded-lg shadow-xl p-2 min-w-35 animate-in fade-in duration-150">
 								<div className="text-xs font-semibold text-gray-500 px-3 py-1.5">
 									表格密度
 								</div>

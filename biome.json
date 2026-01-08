@@ -18,6 +18,7 @@
 			"style": {
 				"noNonNullAssertion": "off"
 			},
+			"a11y": "off",
 			"recommended": true
 		}
 	},

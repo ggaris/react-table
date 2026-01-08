@@ -1,5 +1,5 @@
-import React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import React from "react";
 import { DataTable } from "../components/table";
 import { makeData } from "./makeData";
 
@@ -90,7 +90,7 @@ export function BasicExample() {
 				},
 			},
 		],
-		[]
+		[],
 	);
 
 	// 模拟加载

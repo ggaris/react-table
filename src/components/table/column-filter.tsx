@@ -1,5 +1,5 @@
-import React from "react";
 import type { Column } from "@tanstack/react-table";
+import React from "react";
 
 interface ColumnFilterProps<TData, TValue> {
 	column: Column<TData, TValue>;
@@ -75,7 +75,7 @@ export function ColumnFilter<TData, TValue>({
 					/>
 
 					{/* 筛选输入框 */}
-					<div className="absolute top-full right-0 mt-2 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-[220px] animate-in fade-in duration-150">
+					<div className="absolute top-full right-0 mt-2 z-20 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-55 animate-in fade-in duration-150">
 						<div className="space-y-2">
 							<label className="block text-xs font-semibold text-gray-700 mb-1">
 								筛选条件
