@@ -1,9 +1,7 @@
 import {
 	type ColumnDef,
-	type ColumnFiltersState,
 	flexRender,
 	getCoreRowModel,
-	getFilteredRowModel,
 	getPaginationRowModel,
 	getSortedRowModel,
 	type PaginationState,
@@ -14,7 +12,6 @@ import {
 } from "@tanstack/react-table";
 import React from "react";
 import { Checkbox } from "./checkbox";
-import { ColumnFilter } from "./column-filter";
 import { TableSkeleton } from "./table-skeleton";
 import { type DensityType, ToolBar } from "./toolbar";
 
@@ -36,8 +33,6 @@ export interface DataTableProps<TData> {
 	enableRowSelection?: boolean;
 	/** 是否启用排序功能 */
 	enableSorting?: boolean;
-	/** 是否启用筛选功能 */
-	enableFiltering?: boolean;
 	/** 是否启用分页功能 */
 	enablePagination?: boolean;
 	/** 自定义空数据状态组件 */
@@ -68,7 +63,6 @@ export function DataTable<TData>({
 	loading = false,
 	enableRowSelection = false,
 	enableSorting = true,
-	enableFiltering = false,
 	enablePagination = true,
 	emptyState,
 	onRowClick,
@@ -95,11 +89,6 @@ export function DataTable<TData>({
 	};
 	// 排序状态
 	const [sorting, setSorting] = React.useState<SortingState>([]);
-
-	// 列筛选状态
-	const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-		[],
-	);
 
 	// 列可见性状态 (从 localStorage 恢复)
 	const [columnVisibility, setColumnVisibility] =
@@ -142,22 +131,18 @@ export function DataTable<TData>({
 		columns,
 		state: {
 			sorting,
-			columnFilters,
 			columnVisibility,
 			rowSelection,
 			pagination,
 		},
 		enableRowSelection,
 		enableSorting,
-		enableColumnFilters: enableFiltering,
 		onSortingChange: setSorting,
-		onColumnFiltersChange: setColumnFilters,
 		onColumnVisibilityChange: setColumnVisibility,
 		onRowSelectionChange: setRowSelection,
 		onPaginationChange: setPagination,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
-		getFilteredRowModel: enableFiltering ? getFilteredRowModel() : undefined,
 		getPaginationRowModel: enablePagination
 			? getPaginationRowModel()
 			: undefined,
@@ -225,7 +210,9 @@ export function DataTable<TData>({
 											<Checkbox
 												checked={table.getIsAllRowsSelected()}
 												indeterminate={table.getIsSomeRowsSelected()}
-												onChange={table.getToggleAllRowsSelectedHandler()}
+												onChange={(checked) =>
+													table.toggleAllRowsSelected(checked)
+												}
 												ariaLabel="全选"
 											/>
 										</th>
@@ -321,11 +308,6 @@ export function DataTable<TData>({
 														</button>
 													)}
 												</div>
-
-												{/* 筛选按钮 */}
-												{enableFiltering && header.column.getCanFilter() && (
-													<ColumnFilter column={header.column} />
-												)}
 											</div>
 										</th>
 									))}
@@ -399,8 +381,8 @@ export function DataTable<TData>({
 											}
 											className={`
 										border-b border-gray-100 last:border-b-0
-										transition-colors duration-200 motion-reduce:transition-none
-										focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset
+										transition-all duration-200 motion-reduce:transition-none
+										focus:outline-none
 										${
 											enableRowSelection && row.getIsSelected()
 												? "bg-blue-50/80 hover:bg-blue-100/80"
@@ -416,7 +398,7 @@ export function DataTable<TData>({
 												>
 													<Checkbox
 														checked={row.getIsSelected()}
-														onChange={row.getToggleSelectedHandler()}
+														onChange={(checked) => row.toggleSelected(checked)}
 														ariaLabel={`选择第 ${row.index + 1} 行`}
 													/>
 												</td>
@@ -481,7 +463,7 @@ export function DataTable<TData>({
 								type="button"
 								onClick={() => table.setPageIndex(0)}
 								disabled={!table.getCanPreviousPage()}
-								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 "
 								title="首页"
 								aria-label="第一页"
 							>
@@ -504,7 +486,7 @@ export function DataTable<TData>({
 								type="button"
 								onClick={() => table.previousPage()}
 								disabled={!table.getCanPreviousPage()}
-								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2"
 								title="上一页"
 								aria-label="上一页"
 							>
@@ -533,7 +515,7 @@ export function DataTable<TData>({
 								type="button"
 								onClick={() => table.nextPage()}
 								disabled={!table.getCanNextPage()}
-								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 "
 								title="下一页"
 								aria-label="下一页"
 							>
@@ -556,7 +538,7 @@ export function DataTable<TData>({
 								type="button"
 								onClick={() => table.setPageIndex(table.getPageCount() - 1)}
 								disabled={!table.getCanNextPage()}
-								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2"
 								title="末页"
 								aria-label="最后一页"
 							>
@@ -588,7 +570,7 @@ export function DataTable<TData>({
 									const page = e.target.value ? Number(e.target.value) - 1 : 0;
 									table.setPageIndex(page);
 								}}
-								className="w-16 px-2 py-1.5 text-sm text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-150 motion-reduce:transition-none"
+								className="w-16 px-2 py-1.5 text-sm text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-150 motion-reduce:transition-none"
 								aria-label="跳转到指定页码"
 							/>
 							<span className="text-gray-600 hidden sm:inline">页</span>
@@ -600,7 +582,7 @@ export function DataTable<TData>({
 							onChange={(e) => {
 								table.setPageSize(Number(e.target.value));
 							}}
-							className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white hover:bg-gray-50 transition-all duration-150 motion-reduce:transition-none cursor-pointer order-3 lg:order-2"
+							className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent bg-white hover:bg-gray-50 transition-all duration-150 motion-reduce:transition-none cursor-pointer order-3 lg:order-2"
 							aria-label="选择每页显示条数"
 						>
 							{pageSizeOptions.map((pageSize) => (

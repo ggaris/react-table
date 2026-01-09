@@ -26,31 +26,27 @@ export function BasicExample() {
 				accessorKey: "firstName",
 				header: "名",
 				enableSorting: true,
-				enableColumnFilter: true,
+				accessorFn: (row) => row.firstName.toUpperCase(),
 			},
 			{
 				accessorKey: "lastName",
 				header: "姓",
 				enableSorting: true,
-				enableColumnFilter: true,
 			},
 			{
 				accessorKey: "age",
 				header: "年龄",
 				enableSorting: true,
-				enableColumnFilter: false,
 			},
 			{
 				accessorKey: "visits",
 				header: "访问次数",
 				enableSorting: true,
-				enableColumnFilter: false,
 			},
 			{
 				accessorKey: "status",
 				header: "状态",
 				enableSorting: true,
-				enableColumnFilter: true,
 				cell: (info) => {
 					const status = info.getValue() as string;
 					const statusColors: Record<string, string> = {
@@ -73,7 +69,6 @@ export function BasicExample() {
 				accessorKey: "progress",
 				header: "进度",
 				enableSorting: true,
-				enableColumnFilter: false,
 				cell: (info) => {
 					const progress = info.getValue() as number;
 					return (
@@ -125,11 +120,11 @@ export function BasicExample() {
 			<DataTable
 				data={data}
 				columns={columns}
+				rowKey={"age"}
 				storageKey="demo-table"
 				loading={loading}
 				enableRowSelection
 				enableSorting
-				enableFiltering
 				enablePagination
 				initialPageSize={10}
 				showToolBar

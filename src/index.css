@@ -6,6 +6,15 @@
   box-sizing: border-box;
 }
 
+@layer base {
+  :focus {
+    outline: none;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2;
+  }
+}
 body {
   font-family: system-ui, -apple-system, sans-serif;
   line-height: 1.5;
