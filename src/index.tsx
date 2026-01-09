@@ -18,9 +18,7 @@ function App() {
 
 				{/* 基础示例 */}
 				<section>
-					<h2 className="text-xl font-semibold text-gray-900 mb-4">
-						基础示例
-					</h2>
+					<h2 className="text-xl font-semibold text-gray-900 mb-4">基础示例</h2>
 					<BasicExample />
 				</section>
 			</div>
@@ -34,5 +32,5 @@ if (!rootElement) throw new Error("Failed to find the root element");
 ReactDOM.createRoot(rootElement).render(
 	<React.StrictMode>
 		<App />
-	</React.StrictMode>
+	</React.StrictMode>,
 );
