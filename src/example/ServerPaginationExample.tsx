@@ -130,9 +130,7 @@ export function ServerPaginationExample() {
 	return (
 		<div className="space-y-4">
 			<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-				<h3 className="font-semibold text-blue-900 mb-2">
-					📡 后端分页模式
-				</h3>
+				<h3 className="font-semibold text-blue-900 mb-2">📡 后端分页模式</h3>
 				<ul className="text-sm text-blue-800 space-y-1">
 					<li>• 总数据量: {totalData.length} 条（模拟后端数据）</li>
 					<li>• 每次只加载当前页的数据</li>
@@ -142,70 +140,24 @@ export function ServerPaginationExample() {
 				</ul>
 			</div>
 
-			<DataTable
+			<DataTable<Person>
 				data={pageData}
 				columns={columns}
 				rowKey="id"
 				loading={loading}
+				showToolBar
 				enableRowSelection
 				enableSorting={false} // 后端分页通常在后端排序
-				enablePagination={false} // 使用自定义分页控制
-				showToolBar={false}
+				// enablePagination={false} // 使用自定义分页控制
+				onRefresh={fetchPageData.bind(null, pageIndex, pageSize)}
 				onSelectionChange={(selectedRows) => {
 					console.log("已选择的行:", selectedRows);
-					console.log("已选择的ID:", selectedRows.map((r) => r.id));
+					console.log(
+						"已选择的ID:",
+						selectedRows.map((r) => r.id),
+					);
 				}}
 			/>
-
-			{/* 自定义分页控制 */}
-			<div className="flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-lg">
-				<div className="text-sm text-gray-600">
-					总计 {totalData.length} 条数据，显示第 {pageIndex * pageSize + 1}-
-					{Math.min((pageIndex + 1) * pageSize, totalData.length)} 条
-				</div>
-				<div className="flex items-center gap-2">
-					<button
-						type="button"
-						onClick={() => {
-							if (pageIndex > 0) {
-								setPageIndex(pageIndex - 1);
-							}
-						}}
-						disabled={pageIndex === 0}
-						className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-					>
-						上一页
-					</button>
-					<span className="text-sm text-gray-600">
-						第 {pageIndex + 1} / {Math.ceil(totalData.length / pageSize)} 页
-					</span>
-					<button
-						type="button"
-						onClick={() => {
-							if ((pageIndex + 1) * pageSize < totalData.length) {
-								setPageIndex(pageIndex + 1);
-							}
-						}}
-						disabled={(pageIndex + 1) * pageSize >= totalData.length}
-						className="px-3 py-1.5 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-					>
-						下一页
-					</button>
-					<select
-						value={pageSize}
-						onChange={(e) => {
-							setPageSize(Number(e.target.value));
-							setPageIndex(0);
-						}}
-						className="px-3 py-1.5 text-sm border border-gray-300 rounded-md"
-					>
-						<option value={5}>5 条/页</option>
-						<option value={10}>10 条/页</option>
-						<option value={20}>20 条/页</option>
-						<option value={50}>50 条/页</option>
-					</select>
-				</div>
-			</div>
 		</div>
 	);
 }

@@ -16,6 +16,28 @@ import { TableSkeleton } from "./table-skeleton";
 import { type DensityType, ToolBar } from "./toolbar";
 
 /**
+ * DataTable Ref 暴露的方法
+ */
+export interface DataTableRef<TData = unknown> {
+	/** 刷新表格（调用 onRefresh 回调） */
+	refresh: () => void;
+	/** 重置行选择 */
+	resetSelection: () => void;
+	/** 重置分页到第一页 */
+	resetPagination: () => void;
+	/** 获取当前选中的行数据 */
+	getSelectedRows: () => TData[];
+	/** 获取当前选中的行ID列表 */
+	getSelectedRowIds: () => string[];
+	/** 设置页码 */
+	setPageIndex: (pageIndex: number) => void;
+	/** 设置每页大小 */
+	setPageSize: (pageSize: number) => void;
+	/** 获取当前页码信息 */
+	getPaginationState: () => { pageIndex: number; pageSize: number };
+}
+
+/**
  * DataTable 组件的 Props 类型定义
  */
 export interface DataTableProps<TData> {
@@ -25,7 +47,7 @@ export interface DataTableProps<TData> {
 	data: TData[];
 	/** 列定义 */
 	columns: ColumnDef<TData>[];
-	/** localStorage 存储的 key,用于持久化列的显示/隐藏配置 */
+	/** localStorage 存储的 key,用于持久化列的显示/隐藏配置。如果提供，将自动启用列可见性控制 */
 	storageKey?: string;
 	/** 是否显示加载状态 */
 	loading?: boolean;
@@ -47,31 +69,52 @@ export interface DataTableProps<TData> {
 	pageSizeOptions?: number[];
 	/** 是否显示工具栏 */
 	showToolBar?: boolean;
-	/** 刷新回调 */
+	/** 刷新回调。如果提供，将自动在工具栏显示刷新按钮 */
 	onRefresh?: () => void;
 }
 
 /**
  * 通用的数据表格组件
  * 基于 @tanstack/react-table 封装,提供完整的表格功能
+ *
+ * @example
+ * ```tsx
+ * const tableRef = useRef<DataTableRef<Person>>(null);
+ *
+ * <DataTable
+ *   ref={tableRef}
+ *   data={data}
+ *   columns={columns}
+ *   rowKey="id"
+ *   storageKey="my-table"
+ *   onRefresh={() => fetchData()}
+ * />
+ *
+ * // 调用方法
+ * tableRef.current?.refresh();
+ * tableRef.current?.resetSelection();
+ * ```
  */
-export function DataTable<TData>({
-	rowKey,
-	data,
-	columns,
-	storageKey,
-	loading = false,
-	enableRowSelection = false,
-	enableSorting = true,
-	enablePagination = true,
-	emptyState,
-	onRowClick,
-	onSelectionChange,
-	initialPageSize = 10,
-	pageSizeOptions = [10, 20, 30, 40, 50],
-	showToolBar = true,
-	onRefresh,
-}: DataTableProps<TData>) {
+function DataTableInner<TData>(
+	{
+		rowKey,
+		data,
+		columns,
+		storageKey,
+		loading = false,
+		enableRowSelection = false,
+		enableSorting = true,
+		enablePagination = true,
+		emptyState,
+		onRowClick,
+		onSelectionChange,
+		initialPageSize = 10,
+		pageSizeOptions = [10, 20, 30, 40, 50],
+		showToolBar = true,
+		onRefresh,
+	}: DataTableProps<TData>,
+	ref: React.Ref<DataTableRef<TData>>,
+) {
 	// 密度状态
 	const [density, setDensity] = React.useState<DensityType>("default");
 
@@ -159,6 +202,40 @@ export function DataTable<TData>({
 			onSelectionChange(selectedRows);
 		}
 	}, [onSelectionChange, table]);
+
+	// 暴露方法给父组件
+	React.useImperativeHandle(
+		ref,
+		() => ({
+			refresh: () => {
+				if (onRefresh) {
+					onRefresh();
+				}
+			},
+			resetSelection: () => {
+				setRowSelection({});
+			},
+			resetPagination: () => {
+				setPagination({ pageIndex: 0, pageSize: initialPageSize });
+			},
+			getSelectedRows: () => {
+				return table.getSelectedRowModel().rows.map((row) => row.original);
+			},
+			getSelectedRowIds: () => {
+				return Object.keys(rowSelection);
+			},
+			setPageIndex: (pageIndex: number) => {
+				table.setPageIndex(pageIndex);
+			},
+			setPageSize: (pageSize: number) => {
+				table.setPageSize(pageSize);
+			},
+			getPaginationState: () => {
+				return pagination;
+			},
+		}),
+		[onRefresh, table, rowSelection, pagination, initialPageSize],
+	);
 
 	// 处理行点击 - 同时切换行选择状态
 	const handleRowClick = (rowId: string, original: TData) => {
@@ -602,3 +679,12 @@ export function DataTable<TData>({
 		</div>
 	);
 }
+
+// 导出带有泛型支持的组件
+// 使用双重断言来绕过 TypeScript 的类型检查限制
+export const DataTable = React.forwardRef(DataTableInner) as unknown as <
+	TData,
+>(
+	props: DataTableProps<TData> & { ref?: React.Ref<DataTableRef<TData>> },
+) => React.ReactElement;
+

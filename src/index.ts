@@ -6,6 +6,7 @@ export {
 	ColumnVisibility,
 	DataTable,
 	type DataTableProps,
+	type DataTableRef,
 	type DensityType,
 	TableSkeleton,
 	ToolBar,
