@@ -137,6 +137,8 @@ export function DataTable<TData>({
 		},
 		enableRowSelection,
 		enableSorting,
+		// 使用 rowKey 作为行的唯一标识，确保后端分页时状态正确
+		getRowId: (row) => String(row[rowKey]),
 		onSortingChange: setSorting,
 		onColumnVisibilityChange: setColumnVisibility,
 		onRowSelectionChange: setRowSelection,
@@ -208,12 +210,15 @@ export function DataTable<TData>({
 											className={`${densityHeaderPadding[density]} w-16 text-center sticky left-0 bg-linear-to-b from-gray-100 to-gray-50/80 z-10`}
 										>
 											<Checkbox
-												checked={table.getIsAllRowsSelected()}
-												indeterminate={table.getIsSomeRowsSelected()}
-												onChange={(checked) =>
-													table.toggleAllRowsSelected(checked)
+												checked={table.getIsAllPageRowsSelected()}
+												indeterminate={
+													table.getIsSomePageRowsSelected() &&
+													!table.getIsAllPageRowsSelected()
 												}
-												ariaLabel="全选"
+												onChange={(checked) =>
+													table.toggleAllPageRowsSelected(checked)
+												}
+												ariaLabel="全选当前页"
 											/>
 										</th>
 									)}
