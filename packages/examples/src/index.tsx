@@ -1,10 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
+import { TableProvider } from "r-table";
+import { Navigation } from "./components/Navigation";
+import { RefApiExample } from "./examples/RefApiExample";
 import { RequestModeExample } from "./examples/RequestModeExample";
 import { ServerPaginationExample } from "./examples/ServerPaginationExample";
-import { RefApiExample } from "./examples/RefApiExample";
-import { Navigation } from "./components/Navigation";
 import { useHashRouter } from "./hooks/useHashRouter";
 
 function App() {
@@ -14,11 +15,11 @@ function App() {
 	const renderContent = () => {
 		switch (currentRoute) {
 			case "/":
-				return <RequestModeExample />;
+				return <RefApiExample />;
 			case "/server-pagination":
 				return <ServerPaginationExample />;
-			case "/ref-api":
-				return <RefApiExample />;
+			case "/request-mode":
+				return <RequestModeExample />;
 			default:
 				return (
 					<div className="text-center py-12">
@@ -46,6 +47,31 @@ if (!rootElement) throw new Error("Failed to find the root element");
 
 ReactDOM.createRoot(rootElement).render(
 	<React.StrictMode>
-		<App />
+		<TableProvider
+			config={{
+				// 自定义分页字段名
+				paginationKeys: {
+					current: "current",
+					size: "size",
+					data: "data",
+					total: "total",
+				},
+				// 默认功能开关
+				defaultFeatures: {
+					enableRowSelection: false,
+					enableSorting: true,
+					enablePagination: true,
+					showToolBar: true,
+				},
+				// 默认 UI 配置
+				defaultUI: {
+					density: "default",
+					pageSize: 10,
+					pageSizeOptions: [10, 20, 30, 40, 50],
+				},
+			}}
+		>
+			<App />
+		</TableProvider>
 	</React.StrictMode>,
 );

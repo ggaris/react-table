@@ -13,3 +13,9 @@ export {
 	TableSkeleton,
 	ToolBar,
 } from "./components/table";
+export {
+	TableProvider,
+	type TableConfig,
+	type TableProviderProps,
+	useTableConfig,
+} from "./components/table/table-context";

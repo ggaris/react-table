@@ -12,6 +12,7 @@ import {
 } from "@tanstack/react-table";
 import React from "react";
 import { Checkbox } from "./checkbox";
+import { useTableConfig } from "./table-context";
 import { TableSkeleton } from "./table-skeleton";
 import { type DensityType, ToolBar } from "./toolbar";
 
@@ -44,9 +45,9 @@ export interface DataTableRef<TData = unknown> {
  */
 export interface RequestParams {
 	/** 当前页码（从1开始） */
-	current: number;
+	current?: number;
 	/** 每页大小 */
-	size: number;
+	size?: number;
 	/** 额外的搜索/筛选参数 */
 	[key: string]: any;
 }
@@ -134,19 +135,35 @@ function DataTableInner<TData>(
 		columns,
 		storageKey,
 		loading: externalLoading = false,
-		enableRowSelection = false,
-		enableSorting = true,
-		enablePagination = true,
+		enableRowSelection,
+		enableSorting,
+		enablePagination,
 		emptyState,
 		onRowClick,
 		onSelectionChange,
-		initialPageSize = 10,
-		pageSizeOptions = [10, 20, 30, 40, 50],
-		showToolBar = true,
+		initialPageSize,
+		pageSizeOptions,
+		showToolBar,
 		onRefresh,
 	}: DataTableProps<TData>,
 	ref: React.Ref<DataTableRef<TData>>,
 ) {
+	// 获取全局配置
+	const config = useTableConfig();
+
+	// 使用配置的默认值（优先使用 props，其次使用全局配置）
+	const finalEnableRowSelection =
+		enableRowSelection ?? config.defaultFeatures.enableRowSelection;
+	const finalEnableSorting =
+		enableSorting ?? config.defaultFeatures.enableSorting;
+	const finalEnablePagination =
+		enablePagination ?? config.defaultFeatures.enablePagination;
+	const finalShowToolBar = showToolBar ?? config.defaultFeatures.showToolBar;
+	const finalInitialPageSize =
+		initialPageSize ?? config.defaultUI.pageSize ?? 10;
+	const finalPageSizeOptions = pageSizeOptions ??
+		config.defaultUI.pageSizeOptions ?? [10, 20, 30, 40, 50];
+
 	// request 模式的状态
 	const [requestData, setRequestData] = React.useState<TData[]>([]);
 	const [requestTotal, setRequestTotal] = React.useState(0);
@@ -154,11 +171,13 @@ function DataTableInner<TData>(
 
 	// 判断使用哪种模式
 	const isRequestMode = !!request;
-	const data = isRequestMode ? requestData : (externalData || []);
+	const data = isRequestMode ? requestData : externalData || [];
 	const loading = isRequestMode ? requestLoading : externalLoading;
 	const total = isRequestMode ? requestTotal : data.length;
-	// 密度状态
-	const [density, setDensity] = React.useState<DensityType>("default");
+	// 密度状态（使用全局配置的默认密度）
+	const [density, setDensity] = React.useState<DensityType>(
+		config.defaultUI.density || "default",
+	);
 
 	// 根据密度计算内边距
 	const densityPadding = {
@@ -197,7 +216,7 @@ function DataTableInner<TData>(
 	// 分页状态
 	const [pagination, setPagination] = React.useState<PaginationState>({
 		pageIndex: 0,
-		pageSize: initialPageSize,
+		pageSize: finalInitialPageSize,
 	});
 
 	// 持久化列可见性到 localStorage
@@ -216,9 +235,12 @@ function DataTableInner<TData>(
 
 		try {
 			setRequestLoading(true);
+
+			// 使用配置的分页 key 构建请求参数
+			const paginationKeys = config.paginationKeys;
 			const result = await request({
-				current: pagination.pageIndex + 1, // 转换为从1开始
-				size: pagination.pageSize,
+				[paginationKeys.current || "current"]: pagination.pageIndex + 1, // 转换为从1开始
+				[paginationKeys.size || "size"]: pagination.pageSize,
 				...params, // 传入额外参数
 			});
 
@@ -227,8 +249,13 @@ function DataTableInner<TData>(
 				setRequestData([]);
 				setRequestTotal(0);
 			} else {
-				setRequestData(result.data);
-				setRequestTotal(result.total);
+				// 使用配置的字段名提取数据
+				const resultData =
+					result[paginationKeys.data as keyof typeof result] || result.data;
+				const resultTotal =
+					result[paginationKeys.total as keyof typeof result] || result.total;
+				setRequestData(resultData as TData[]);
+				setRequestTotal(resultTotal as number);
 			}
 		} catch (error) {
 			console.error("数据请求异常:", error);
@@ -237,7 +264,13 @@ function DataTableInner<TData>(
 		} finally {
 			setRequestLoading(false);
 		}
-	}, [request, pagination.pageIndex, pagination.pageSize, params]);
+	}, [
+		request,
+		pagination.pageIndex,
+		pagination.pageSize,
+		params,
+		config.paginationKeys,
+	]);
 
 	// request 模式下，当分页或参数变化时自动加载数据
 	React.useEffect(() => {
@@ -256,8 +289,8 @@ function DataTableInner<TData>(
 			rowSelection,
 			pagination,
 		},
-		enableRowSelection,
-		enableSorting,
+		enableRowSelection: finalEnableRowSelection,
+		enableSorting: finalEnableSorting,
 		// 使用 rowKey 作为行的唯一标识，确保后端分页时状态正确
 		getRowId: (row) => String(row[rowKey]),
 		onSortingChange: setSorting,
@@ -265,14 +298,16 @@ function DataTableInner<TData>(
 		onRowSelectionChange: setRowSelection,
 		onPaginationChange: setPagination,
 		getCoreRowModel: getCoreRowModel(),
-		getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
+		getSortedRowModel: finalEnableSorting ? getSortedRowModel() : undefined,
 		// Request 模式使用手动分页，Data 模式使用前端分页
 		manualPagination: isRequestMode,
 		pageCount: isRequestMode
 			? Math.ceil(total / pagination.pageSize)
 			: undefined,
 		getPaginationRowModel:
-			enablePagination && !isRequestMode ? getPaginationRowModel() : undefined,
+			finalEnablePagination && !isRequestMode
+				? getPaginationRowModel()
+				: undefined,
 	});
 
 	// 当行选择变化时触发回调
@@ -305,7 +340,7 @@ function DataTableInner<TData>(
 				setRowSelection({});
 			},
 			resetPagination: () => {
-				setPagination({ pageIndex: 0, pageSize: initialPageSize });
+				setPagination({ pageIndex: 0, pageSize: finalInitialPageSize });
 			},
 			getSelectedRows: () => {
 				return table.getSelectedRowModel().rows.map((row) => row.original);
@@ -330,13 +365,13 @@ function DataTableInner<TData>(
 			table,
 			rowSelection,
 			pagination,
-			initialPageSize,
+			finalInitialPageSize,
 		],
 	);
 
 	// 处理行点击 - 同时切换行选择状态
 	const handleRowClick = (rowId: string, original: TData) => {
-		if (enableRowSelection) {
+		if (finalEnableRowSelection) {
 			table.getRow(rowId).toggleSelected();
 		}
 		if (onRowClick) {
@@ -359,7 +394,7 @@ function DataTableInner<TData>(
 	return (
 		<div className="w-full space-y-4">
 			{/* 工具栏 */}
-			{showToolBar && (
+			{finalShowToolBar && (
 				<ToolBar
 					table={table}
 					showColumnVisibility={!!storageKey}
@@ -367,11 +402,7 @@ function DataTableInner<TData>(
 					showRefresh={isRequestMode || !!onRefresh}
 					density={density}
 					onDensityChange={setDensity}
-					onRefresh={
-						isRequestMode
-							? fetchData
-							: onRefresh
-					}
+					onRefresh={isRequestMode ? fetchData : onRefresh}
 				/>
 			)}
 
@@ -383,7 +414,7 @@ function DataTableInner<TData>(
 							{table.getHeaderGroups().map((headerGroup) => (
 								<tr key={headerGroup.id} className="border-b border-gray-300">
 									{/* 行选择列 */}
-									{enableRowSelection && (
+									{finalEnableRowSelection && (
 										<th
 											className={`${densityHeaderPadding[density]} w-16 text-center sticky left-0 bg-linear-to-b from-gray-100 to-gray-50/80 z-10`}
 										>
@@ -415,14 +446,14 @@ function DataTableInner<TData>(
 															type="button"
 															onClick={() => {
 																if (
-																	enableSorting &&
+																	finalEnableSorting &&
 																	header.column.getCanSort()
 																) {
 																	header.column.toggleSorting();
 																}
 															}}
 															className={`flex items-center gap-2 transition-colors duration-150 motion-reduce:transition-none ${
-																enableSorting && header.column.getCanSort()
+																finalEnableSorting && header.column.getCanSort()
 																	? "hover:text-gray-900 cursor-pointer group"
 																	: ""
 															}`}
@@ -432,62 +463,64 @@ function DataTableInner<TData>(
 																header.getContext(),
 															)}
 															{/* 排序图标 */}
-															{enableSorting && header.column.getCanSort() && (
-																<span
-																	className={`transition-all duration-200 motion-reduce:transition-none ${
-																		header.column.getIsSorted()
-																			? "text-blue-600"
-																			: "text-gray-400 group-hover:text-gray-600"
-																	}`}
-																>
-																	{header.column.getIsSorted() === "asc" ? (
-																		<svg
-																			className="w-4 h-4"
-																			fill="none"
-																			stroke="currentColor"
-																			viewBox="0 0 24 24"
-																		>
-																			<title>升序排序</title>
-																			<path
-																				strokeLinecap="round"
-																				strokeLinejoin="round"
-																				strokeWidth={2}
-																				d="M5 15l7-7 7 7"
-																			/>
-																		</svg>
-																	) : header.column.getIsSorted() === "desc" ? (
-																		<svg
-																			className="w-4 h-4"
-																			fill="none"
-																			stroke="currentColor"
-																			viewBox="0 0 24 24"
-																		>
-																			<title>降序排序</title>
-																			<path
-																				strokeLinecap="round"
-																				strokeLinejoin="round"
-																				strokeWidth={2}
-																				d="M19 9l-7 7-7-7"
-																			/>
-																		</svg>
-																	) : (
-																		<svg
-																			className="w-4 h-4"
-																			fill="none"
-																			stroke="currentColor"
-																			viewBox="0 0 24 24"
-																		>
-																			<title>可排序</title>
-																			<path
-																				strokeLinecap="round"
-																				strokeLinejoin="round"
-																				strokeWidth={2}
-																				d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																			/>
-																		</svg>
-																	)}
-																</span>
-															)}
+															{finalEnableSorting &&
+																header.column.getCanSort() && (
+																	<span
+																		className={`transition-all duration-200 motion-reduce:transition-none ${
+																			header.column.getIsSorted()
+																				? "text-blue-600"
+																				: "text-gray-400 group-hover:text-gray-600"
+																		}`}
+																	>
+																		{header.column.getIsSorted() === "asc" ? (
+																			<svg
+																				className="w-4 h-4"
+																				fill="none"
+																				stroke="currentColor"
+																				viewBox="0 0 24 24"
+																			>
+																				<title>升序排序</title>
+																				<path
+																					strokeLinecap="round"
+																					strokeLinejoin="round"
+																					strokeWidth={2}
+																					d="M5 15l7-7 7 7"
+																				/>
+																			</svg>
+																		) : header.column.getIsSorted() ===
+																			"desc" ? (
+																			<svg
+																				className="w-4 h-4"
+																				fill="none"
+																				stroke="currentColor"
+																				viewBox="0 0 24 24"
+																			>
+																				<title>降序排序</title>
+																				<path
+																					strokeLinecap="round"
+																					strokeLinejoin="round"
+																					strokeWidth={2}
+																					d="M19 9l-7 7-7-7"
+																				/>
+																			</svg>
+																		) : (
+																			<svg
+																				className="w-4 h-4"
+																				fill="none"
+																				stroke="currentColor"
+																				viewBox="0 0 24 24"
+																			>
+																				<title>可排序</title>
+																				<path
+																					strokeLinecap="round"
+																					strokeLinejoin="round"
+																					strokeWidth={2}
+																					d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+																				/>
+																			</svg>
+																		)}
+																	</span>
+																)}
 														</button>
 													)}
 												</div>
@@ -504,14 +537,14 @@ function DataTableInner<TData>(
 									rowKey={rowKey}
 									rows={pagination.pageSize}
 									columns={columns.length}
-									hasSelection={enableRowSelection}
+									hasSelection={finalEnableRowSelection}
 									density={density}
 								/>
 							) : data.length === 0 ? (
 								// 空数据状态
 								<tr>
 									<td
-										colSpan={columns.length + (enableRowSelection ? 1 : 0)}
+										colSpan={columns.length + (finalEnableRowSelection ? 1 : 0)}
 										className="px-6 py-20 text-center"
 									>
 										{emptyState || (
@@ -554,28 +587,32 @@ function DataTableInner<TData>(
 												handleRowKeyDown(e, row.id, row.original)
 											}
 											tabIndex={
-												enableRowSelection || onRowClick ? 0 : undefined
+												finalEnableRowSelection || onRowClick ? 0 : undefined
 											}
 											role={
-												enableRowSelection || onRowClick ? "button" : undefined
+												finalEnableRowSelection || onRowClick
+													? "button"
+													: undefined
 											}
 											aria-selected={
-												enableRowSelection ? row.getIsSelected() : undefined
+												finalEnableRowSelection
+													? row.getIsSelected()
+													: undefined
 											}
 											className={`
 										border-b border-gray-100 last:border-b-0
 										transition-all duration-200 motion-reduce:transition-none
 										focus:outline-none
 										${
-											enableRowSelection && row.getIsSelected()
+											finalEnableRowSelection && row.getIsSelected()
 												? "bg-blue-50/80 hover:bg-blue-100/80"
 												: "bg-white hover:bg-gray-50"
 										}
-										${enableRowSelection || onRowClick ? "cursor-pointer" : ""}
+										${finalEnableRowSelection || onRowClick ? "cursor-pointer" : ""}
 									`}
 										>
 											{/* 行选择 Checkbox */}
-											{enableRowSelection && (
+											{finalEnableRowSelection && (
 												<td
 													className={`${densityPadding[density]} w-16 text-center sticky left-0 bg-inherit`}
 												>
@@ -608,15 +645,12 @@ function DataTableInner<TData>(
 			</div>
 
 			{/* 分页控件 */}
-			{enablePagination && !loading && data.length > 0 && (
+			{finalEnablePagination && !loading && data.length > 0 && (
 				<div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm">
 					{/* 信息显示 */}
 					<div className="flex flex-wrap items-center gap-3 text-sm">
 						<span className="text-gray-600">
-							共{" "}
-							<span className="font-semibold text-gray-900">
-								{total}
-							</span>{" "}
+							共 <span className="font-semibold text-gray-900">{total}</span>{" "}
 							条数据
 						</span>
 						{Object.keys(rowSelection).length > 0 && (
@@ -768,7 +802,7 @@ function DataTableInner<TData>(
 							className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent bg-white hover:bg-gray-50 transition-all duration-150 motion-reduce:transition-none cursor-pointer order-3 lg:order-2"
 							aria-label="选择每页显示条数"
 						>
-							{pageSizeOptions.map((pageSize) => (
+							{finalPageSizeOptions.map((pageSize) => (
 								<option key={pageSize} value={pageSize}>
 									{pageSize} 条/页
 								</option>
@@ -783,9 +817,6 @@ function DataTableInner<TData>(
 
 // 导出带有泛型支持的组件
 // 使用双重断言来绕过 TypeScript 的类型检查限制
-export const DataTable = React.forwardRef(DataTableInner) as unknown as <
-	TData,
->(
+export const DataTable = React.forwardRef(DataTableInner) as unknown as <TData>(
 	props: DataTableProps<TData> & { ref?: React.Ref<DataTableRef<TData>> },
 ) => React.ReactElement;
-
