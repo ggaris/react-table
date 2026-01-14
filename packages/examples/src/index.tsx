@@ -6,6 +6,7 @@ import { Navigation } from "./components/Navigation";
 import { RefApiExample } from "./examples/RefApiExample";
 import { RequestModeExample } from "./examples/RequestModeExample";
 import { ServerPaginationExample } from "./examples/ServerPaginationExample";
+import { ValueTypeExample } from "./examples/ValueTypeExample";
 import { useHashRouter } from "./hooks/useHashRouter";
 
 function App() {
@@ -20,6 +21,8 @@ function App() {
 				return <ServerPaginationExample />;
 			case "/request-mode":
 				return <RequestModeExample />;
+			case "/valuetype":
+				return <ValueTypeExample />;
 			default:
 				return (
 					<div className="text-center py-12">
