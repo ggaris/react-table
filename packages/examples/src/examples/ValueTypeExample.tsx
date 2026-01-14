@@ -277,53 +277,6 @@ export function ValueTypeExample() {
 					console.log("选中的产品:", selectedRows);
 				}}
 			/>
-
-			<div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-				<h4 className="font-semibold text-gray-900 mb-2">代码示例：</h4>
-				<pre className="text-xs text-gray-700 overflow-x-auto bg-gray-900 text-gray-100 p-3 rounded">
-					{`const columns: ProColumnDef<Product>[] = [
-  {
-    accessorKey: "price",
-    header: "价格",
-    valueType: "money",
-    fieldProps: {
-      symbol: "¥",
-      precision: 3, // 三位小数，统一大小
-      separator: true,
-    },
-  },
-  {
-    accessorKey: "discount",
-    header: "折扣",
-    valueType: "percent",
-    fieldProps: {
-      precision: 0,
-      showSymbol: true,
-      showProgressBar: true, // 进度条+文字模式
-    },
-  },
-  {
-    accessorKey: "category",
-    header: "类别",
-    valueType: "tag",
-    fieldProps: {
-      colorMap: {
-        手机: "bg-blue-50 text-blue-700", // 弱化 border
-      },
-    },
-  },
-  {
-    accessorKey: "rating",
-    header: "评分",
-    valueType: "rating", // 星星评分
-    fieldProps: {
-      max: 5,
-      showValue: true,
-    },
-  },
-];`}
-				</pre>
-			</div>
 		</div>
 	);
 }

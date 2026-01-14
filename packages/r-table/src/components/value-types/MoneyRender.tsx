@@ -17,9 +17,19 @@ export function MoneyRender({ value, config = {} }: MoneyRenderProps) {
 	if (value === null || value === undefined) {
 		return (
 			<span className="inline-flex items-center gap-1.5 text-slate-400 text-sm">
-				<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<svg
+					className="w-3.5 h-3.5"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
 					<title>无数据</title>
-					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={2}
+						d="M20 12H4"
+					/>
 				</svg>
 				<span>-</span>
 			</span>
@@ -33,7 +43,11 @@ export function MoneyRender({ value, config = {} }: MoneyRenderProps) {
 			<span className="inline-flex items-center gap-1.5 px-2 py-1 bg-red-50 text-red-600 text-xs rounded-md border border-red-200">
 				<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
 					<title>错误</title>
-					<path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+					<path
+						fillRule="evenodd"
+						d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+						clipRule="evenodd"
+					/>
 				</svg>
 				<span>无效</span>
 			</span>
@@ -44,8 +58,8 @@ export function MoneyRender({ value, config = {} }: MoneyRenderProps) {
 	const formatted = num.toFixed(precision);
 	const parts = formatted.split(".");
 	const integerPart = separator
-		? parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-		: parts[0];
+		? (parts[0] ?? "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+		: (parts[0] ?? "0");
 	const decimalPart = parts[1] ? `.${parts[1]}` : "";
 
 	// 判断正负数以应用不同颜色
@@ -65,9 +79,7 @@ export function MoneyRender({ value, config = {} }: MoneyRenderProps) {
 			<span className="text-xs opacity-75">{symbol}</span>
 			<span className="tabular-nums">
 				{integerPart}
-				{decimalPart && (
-					<span className="opacity-70">{decimalPart}</span>
-				)}
+				{decimalPart && <span className="opacity-70">{decimalPart}</span>}
 			</span>
 		</span>
 	);
