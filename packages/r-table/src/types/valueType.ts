@@ -205,6 +205,8 @@ export interface ColumnValueTypeConfig<TData = unknown> {
 	fieldProps?: ValueTypeConfig;
 	/** 文本对齐方式，优先级高于 valueType 默认对齐 */
 	align?: "left" | "center" | "right";
+	/** 列固定位置 */
+	fixed?: "left" | "right";
 	/** 自定义渲染函数（优先级高于 valueType） */
 	render?: (value: unknown, record: TData, index: number) => React.ReactNode;
 }
@@ -223,6 +225,8 @@ export type TypedColumnValueTypeConfig<
 	fieldProps?: GetConfigByValueType<T>;
 	/** 文本对齐方式，优先级高于 valueType 默认对齐 */
 	align?: "left" | "center" | "right";
+	/** 列固定位置 */
+	fixed?: "left" | "right";
 	/** 自定义渲染函数（优先级高于 valueType） */
 	render?: (value: unknown, record: TData, index: number) => React.ReactNode;
 };

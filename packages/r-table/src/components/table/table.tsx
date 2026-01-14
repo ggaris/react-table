@@ -378,6 +378,79 @@ function DataTableInner<TData>(
 		],
 	);
 
+	// 计算固定列的偏移量
+	const fixedColumnsInfo = React.useMemo(() => {
+		const info = new Map<
+			string,
+			{ left?: number; right?: number; isFixed: boolean }
+		>();
+		const checkboxWidth = 64; // w-16 = 4rem = 64px
+		const defaultColumnWidth = 120; // 默认列宽，与 minWidth 一致
+
+		// 获取所有可见列
+		const visibleColumns = processedColumns.filter((col) => {
+			const columnDef = col as ProColumnDef<TData>;
+			return columnDef.id !== undefined;
+		});
+
+		// 计算左固定列的偏移量
+		let leftOffset = finalEnableRowSelection ? checkboxWidth : 0;
+		for (const col of visibleColumns) {
+			const columnDef = col as ProColumnDef<TData>;
+			if (columnDef.fixed === "left") {
+				info.set(columnDef.id as string, {
+					left: leftOffset,
+					isFixed: true,
+				});
+				leftOffset += defaultColumnWidth;
+			}
+		}
+
+		// 计算右固定列的偏移量
+		let rightOffset = 0;
+		for (let i = visibleColumns.length - 1; i >= 0; i--) {
+			const columnDef = visibleColumns[i] as ProColumnDef<TData>;
+			if (columnDef.fixed === "right") {
+				info.set(columnDef.id as string, {
+					right: rightOffset,
+					isFixed: true,
+				});
+				rightOffset += defaultColumnWidth;
+			}
+		}
+
+		return info;
+	}, [processedColumns, finalEnableRowSelection]);
+
+	// 获取固定列的样式
+	const getFixedStyle = React.useCallback(
+		(columnId: string | undefined) => {
+			if (!columnId) return {};
+
+			const fixedInfo = fixedColumnsInfo.get(columnId);
+			if (!fixedInfo?.isFixed) return {};
+
+			const style: React.CSSProperties = {
+				position: "sticky",
+				zIndex: 10,
+				backgroundColor: "inherit",
+			};
+
+			if (fixedInfo.left !== undefined) {
+				style.left = `${fixedInfo.left}px`;
+				style.boxShadow = "2px 0 4px rgba(0, 0, 0, 0.08)";
+			}
+
+			if (fixedInfo.right !== undefined) {
+				style.right = `${fixedInfo.right}px`;
+				style.boxShadow = "-2px 0 4px rgba(0, 0, 0, 0.08)";
+			}
+
+			return style;
+		},
+		[fixedColumnsInfo],
+	);
+
 	// 处理行点击 - 同时切换行选择状态
 	const handleRowClick = (rowId: string, original: TData) => {
 		if (finalEnableRowSelection) {
@@ -457,12 +530,15 @@ function DataTableInner<TData>(
 													? "text-center"
 													: "text-right";
 
+										// 获取固定列样式
+										const fixedStyle = getFixedStyle(columnDef.id as string);
+
 										return (
 											<th
 												key={header.id}
 												colSpan={header.colSpan}
 												className={`${densityHeaderPadding[density]} ${alignClass} text-xs font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-300 border-r border-gray-200 last:border-r-0`}
-												style={{ minWidth: "120px" }}
+												style={{ minWidth: "120px", ...fixedStyle }}
 											>
 												<div className="flex items-center gap-2">
 													{/* 列标题 */}
@@ -667,6 +743,9 @@ function DataTableInner<TData>(
 															? "text-center"
 															: "text-right";
 
+												// 获取固定列样式
+												const fixedStyle = getFixedStyle(columnDef.id as string);
+
 												return (
 													<td
 														key={cell.id}
@@ -675,6 +754,7 @@ function DataTableInner<TData>(
 															minWidth: "120px",
 															paddingLeft: "8px",
 															paddingRight: "8px",
+															...fixedStyle,
 														}}
 													>
 														{flexRender(
