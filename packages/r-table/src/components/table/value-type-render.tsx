@@ -14,6 +14,7 @@ import type {
 	MoneyConfig,
 	PercentConfig,
 	ProgressConfig,
+	RatingConfig,
 	SelectConfig,
 	TagConfig,
 	TimeConfig,
@@ -31,6 +32,7 @@ import {
 	MoneyRender,
 	PercentRender,
 	ProgressRender,
+	RatingRender,
 	SelectRender,
 	TagRender,
 	TextRender,
@@ -81,6 +83,12 @@ export function getValueTypeRender(
 	valueType: "progress",
 	value: unknown,
 	config?: GetConfigByValueType<"progress">,
+): React.ReactNode;
+// rating 类型
+export function getValueTypeRender(
+	valueType: "rating",
+	value: unknown,
+	config?: GetConfigByValueType<"rating">,
 ): React.ReactNode;
 // avatar 类型
 export function getValueTypeRender(
@@ -152,17 +160,18 @@ export function getValueTypeRender(
 			return <SelectRender value={value} config={config as SelectConfig} />;
 		case "progress":
 			return <ProgressRender value={value} config={config as ProgressConfig} />;
+		case "rating":
+			return <RatingRender value={value} config={config as RatingConfig} />;
 		case "avatar":
 			return <AvatarRender value={value} config={config as AvatarConfig} />;
 		case "image":
 			return <ImageRender value={value} config={config as ImageConfig} />;
-		case "code":
-			return <CodeRender value={value} config={config as CodeConfig} />;
 		case "jsonCode":
 			return <JsonCodeRender value={value} />;
 		case "tag":
 			return <TagRender value={value} config={config as TagConfig} />;
 		case "text":
+			return <TextRender value={value} />;
 		default:
 			return <TextRender value={value} />;
 	}

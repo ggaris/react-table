@@ -11,7 +11,7 @@ interface MoneyRenderProps {
 }
 
 export function MoneyRender({ value, config = {} }: MoneyRenderProps) {
-	const { symbol = "¥", precision = 2, separator = true } = config;
+	const { symbol = "¥", precision = 3, separator = true } = config;
 
 	// 处理空值
 	if (value === null || value === undefined) {
@@ -66,7 +66,7 @@ export function MoneyRender({ value, config = {} }: MoneyRenderProps) {
 			<span className="tabular-nums">
 				{integerPart}
 				{decimalPart && (
-					<span className="text-xs opacity-60">{decimalPart}</span>
+					<span className="opacity-70">{decimalPart}</span>
 				)}
 			</span>
 		</span>

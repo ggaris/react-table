@@ -27,14 +27,14 @@ export function TagRender({ value, config = {} }: TagRenderProps) {
 	}
 
 	const valueStr = String(value);
-	const colorClass = colorMap[valueStr] || "bg-blue-100 text-blue-800 border-blue-200";
+	const colorClass = colorMap[valueStr] || "bg-blue-50 text-blue-700";
 
 	return (
 		<span
-			className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md border transition-all duration-200 cursor-default hover:scale-105 ${colorClass}`}
+			className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all duration-200 cursor-default hover:scale-105 ${colorClass}`}
 		>
 			<svg
-				className="w-3 h-3 opacity-75"
+				className="w-3 h-3 opacity-70"
 				fill="none"
 				stroke="currentColor"
 				viewBox="0 0 24 24"

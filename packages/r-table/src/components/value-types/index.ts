@@ -13,6 +13,7 @@ export { JsonCodeRender } from "./JsonCodeRender";
 export { MoneyRender } from "./MoneyRender";
 export { PercentRender } from "./PercentRender";
 export { ProgressRender } from "./ProgressRender";
+export { RatingRender } from "./RatingRender";
 export { SelectRender } from "./SelectRender";
 export { TagRender } from "./TagRender";
 export { TextRender } from "./TextRender";

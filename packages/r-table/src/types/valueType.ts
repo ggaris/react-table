@@ -20,6 +20,7 @@ export type ValueType =
 	| "dateTimeRange" // 日期时间区间
 	| "select" // 选择器
 	| "progress" // 进度条
+	| "rating" // 评分
 	| "avatar" // 头像
 	| "image" // 图片
 	| "code" // 代码块
@@ -47,6 +48,8 @@ export interface PercentConfig {
 	precision?: number;
 	/** 是否显示符号，默认 true */
 	showSymbol?: boolean;
+	/** 是否显示进度条，默认 false */
+	showProgressBar?: boolean;
 }
 
 /**
@@ -134,6 +137,18 @@ export interface TagConfig {
 }
 
 /**
+ * 评分配置
+ */
+export interface RatingConfig {
+	/** 最大评分，默认 5 */
+	max?: number;
+	/** 是否显示数值，默认 true */
+	showValue?: boolean;
+	/** 星星颜色，默认 text-yellow-400 */
+	color?: string;
+}
+
+/**
  * ValueType 配置联合类型
  */
 export type ValueTypeConfig =
@@ -144,6 +159,7 @@ export type ValueTypeConfig =
 	| TimeConfig
 	| SelectConfig
 	| ProgressConfig
+	| RatingConfig
 	| AvatarConfig
 	| ImageConfig
 	| CodeConfig
@@ -164,6 +180,7 @@ export interface ValueTypeConfigMap {
 	dateTimeRange: never;
 	select: SelectConfig;
 	progress: ProgressConfig;
+	rating: RatingConfig;
 	avatar: AvatarConfig;
 	image: ImageConfig;
 	code: CodeConfig;
@@ -186,6 +203,8 @@ export interface ColumnValueTypeConfig<TData = unknown> {
 	valueType?: ValueType;
 	/** ValueType 配置，通过 fieldProps 传递 */
 	fieldProps?: ValueTypeConfig;
+	/** 文本对齐方式，优先级高于 valueType 默认对齐 */
+	align?: "left" | "center" | "right";
 	/** 自定义渲染函数（优先级高于 valueType） */
 	render?: (value: unknown, record: TData, index: number) => React.ReactNode;
 }
@@ -202,6 +221,8 @@ export type TypedColumnValueTypeConfig<
 	valueType?: T;
 	/** ValueType 配置，根据 valueType 自动推断类型 */
 	fieldProps?: GetConfigByValueType<T>;
+	/** 文本对齐方式，优先级高于 valueType 默认对齐 */
+	align?: "left" | "center" | "right";
 	/** 自定义渲染函数（优先级高于 valueType） */
 	render?: (value: unknown, record: TData, index: number) => React.ReactNode;
 };
@@ -218,6 +239,7 @@ export type CreateColumnConfig<TData = unknown> =
 	| TypedColumnValueTypeConfig<TData, "time">
 	| TypedColumnValueTypeConfig<TData, "select">
 	| TypedColumnValueTypeConfig<TData, "progress">
+	| TypedColumnValueTypeConfig<TData, "rating">
 	| TypedColumnValueTypeConfig<TData, "avatar">
 	| TypedColumnValueTypeConfig<TData, "image">
 	| TypedColumnValueTypeConfig<TData, "code">
@@ -225,3 +247,31 @@ export type CreateColumnConfig<TData = unknown> =
 	| TypedColumnValueTypeConfig<TData, "text">
 	| TypedColumnValueTypeConfig<TData, "digit">
 	| TypedColumnValueTypeConfig<TData, "jsonCode">;
+
+/**
+ * 根据 ValueType 获取默认的文本对齐方式
+ */
+export function getDefaultAlign(
+	valueType?: ValueType,
+): "left" | "center" | "right" {
+	if (!valueType) return "left";
+
+	// 数字类型：右对齐
+	if (
+		["digit", "money", "percent", "progress", "rating"].includes(valueType)
+	) {
+		return "right";
+	}
+
+	// 时间、状态和图片类型：居中
+	if (
+		["date", "dateTime", "time", "tag", "select", "image", "avatar"].includes(
+			valueType,
+		)
+	) {
+		return "center";
+	}
+
+	// 文本类型：左对齐（默认）
+	return "left";
+}

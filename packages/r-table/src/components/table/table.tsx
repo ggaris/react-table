@@ -11,6 +11,7 @@ import {
 	type VisibilityState,
 } from "@tanstack/react-table";
 import React from "react";
+import { getDefaultAlign } from "../../types/valueType";
 import type { ProColumnDef } from "../../utils/valueType";
 import { processValueTypeColumns } from "../../utils/valueType";
 import { Checkbox } from "./checkbox";
@@ -417,7 +418,10 @@ function DataTableInner<TData>(
 			{/* 表格容器 - 支持水平滚动 */}
 			<div className="relative overflow-hidden border border-gray-200 rounded-lg shadow-sm bg-white">
 				<div className="overflow-x-auto">
-					<table className="w-full border-collapse">
+					<table
+						className="min-w-full border-collapse table-fixed"
+						style={{ width: "max-content" }}
+					>
 						<thead className="bg-linear-to-b from-gray-100 to-gray-50/80">
 							{table.getHeaderGroups().map((headerGroup) => (
 								<tr key={headerGroup.id} className="border-b border-gray-300">
@@ -440,101 +444,117 @@ function DataTableInner<TData>(
 										</th>
 									)}
 
-									{headerGroup.headers.map((header) => (
-										<th
-											key={header.id}
-											colSpan={header.colSpan}
-											className={`${densityHeaderPadding[density]} text-left text-xs font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-300`}
-										>
-											<div className="flex items-center gap-2">
-												{/* 列标题 */}
-												<div className="flex-1">
-													{header.isPlaceholder ? null : (
-														<button
-															type="button"
-															onClick={() => {
-																if (
+									{headerGroup.headers.map((header) => {
+										// 获取列定义并计算对齐方式
+										const columnDef = header.column
+											.columnDef as ProColumnDef<TData>;
+										const align =
+											columnDef.align || getDefaultAlign(columnDef.valueType);
+										const alignClass =
+											align === "left"
+												? "text-left"
+												: align === "center"
+													? "text-center"
+													: "text-right";
+
+										return (
+											<th
+												key={header.id}
+												colSpan={header.colSpan}
+												className={`${densityHeaderPadding[density]} ${alignClass} text-xs font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-300 border-r border-gray-200 last:border-r-0`}
+												style={{ minWidth: "120px" }}
+											>
+												<div className="flex items-center gap-2">
+													{/* 列标题 */}
+													<div className="flex items-center justify-center flex-1">
+														{header.isPlaceholder ? null : (
+															<button
+																type="button"
+																onClick={() => {
+																	if (
+																		finalEnableSorting &&
+																		header.column.getCanSort()
+																	) {
+																		header.column.toggleSorting();
+																	}
+																}}
+																className={`flex items-center gap-2 transition-colors duration-150 motion-reduce:transition-none ${
 																	finalEnableSorting &&
 																	header.column.getCanSort()
-																) {
-																	header.column.toggleSorting();
-																}
-															}}
-															className={`flex items-center gap-2 transition-colors duration-150 motion-reduce:transition-none ${
-																finalEnableSorting && header.column.getCanSort()
-																	? "hover:text-gray-900 cursor-pointer group"
-																	: ""
-															}`}
-														>
-															{flexRender(
-																header.column.columnDef.header,
-																header.getContext(),
-															)}
-															{/* 排序图标 */}
-															{finalEnableSorting &&
-																header.column.getCanSort() && (
-																	<span
-																		className={`transition-all duration-200 motion-reduce:transition-none ${
-																			header.column.getIsSorted()
-																				? "text-blue-600"
-																				: "text-gray-400 group-hover:text-gray-600"
-																		}`}
-																	>
-																		{header.column.getIsSorted() === "asc" ? (
-																			<svg
-																				className="w-4 h-4"
-																				fill="none"
-																				stroke="currentColor"
-																				viewBox="0 0 24 24"
-																			>
-																				<title>升序排序</title>
-																				<path
-																					strokeLinecap="round"
-																					strokeLinejoin="round"
-																					strokeWidth={2}
-																					d="M5 15l7-7 7 7"
-																				/>
-																			</svg>
-																		) : header.column.getIsSorted() ===
-																			"desc" ? (
-																			<svg
-																				className="w-4 h-4"
-																				fill="none"
-																				stroke="currentColor"
-																				viewBox="0 0 24 24"
-																			>
-																				<title>降序排序</title>
-																				<path
-																					strokeLinecap="round"
-																					strokeLinejoin="round"
-																					strokeWidth={2}
-																					d="M19 9l-7 7-7-7"
-																				/>
-																			</svg>
-																		) : (
-																			<svg
-																				className="w-4 h-4"
-																				fill="none"
-																				stroke="currentColor"
-																				viewBox="0 0 24 24"
-																			>
-																				<title>可排序</title>
-																				<path
-																					strokeLinecap="round"
-																					strokeLinejoin="round"
-																					strokeWidth={2}
-																					d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																				/>
-																			</svg>
-																		)}
-																	</span>
+																		? "hover:text-gray-900 cursor-pointer group"
+																		: ""
+																}`}
+															>
+																{flexRender(
+																	header.column.columnDef.header,
+																	header.getContext(),
 																)}
-														</button>
-													)}
+																{/* 排序图标 */}
+																{finalEnableSorting &&
+																	header.column.getCanSort() && (
+																		<span
+																			className={`transition-all duration-200 motion-reduce:transition-none ${
+																				header.column.getIsSorted()
+																					? "text-blue-600"
+																					: "text-gray-400 group-hover:text-gray-600"
+																			}`}
+																		>
+																			{header.column.getIsSorted() === "asc" ? (
+																				<svg
+																					className="w-4 h-4"
+																					fill="none"
+																					stroke="currentColor"
+																					viewBox="0 0 24 24"
+																				>
+																					<title>升序排序</title>
+																					<path
+																						strokeLinecap="round"
+																						strokeLinejoin="round"
+																						strokeWidth={2}
+																						d="M5 15l7-7 7 7"
+																					/>
+																				</svg>
+																			) : header.column.getIsSorted() ===
+																				"desc" ? (
+																				<svg
+																					className="w-4 h-4"
+																					fill="none"
+																					stroke="currentColor"
+																					viewBox="0 0 24 24"
+																				>
+																					<title>降序排序</title>
+																					<path
+																						strokeLinecap="round"
+																						strokeLinejoin="round"
+																						strokeWidth={2}
+																						d="M19 9l-7 7-7-7"
+																					/>
+																				</svg>
+																			) : (
+																				<svg
+																					className="w-4 h-4"
+																					fill="none"
+																					stroke="currentColor"
+																					viewBox="0 0 24 24"
+																				>
+																					<title>可排序</title>
+																					<path
+																						strokeLinecap="round"
+																						strokeLinejoin="round"
+																						strokeWidth={2}
+																						d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+																					/>
+																				</svg>
+																			)}
+																		</span>
+																	)}
+															</button>
+														)}
+													</div>
 												</div>
-											</div>
-										</th>
-									))}
+											</th>
+										);
+									})}
 								</tr>
 							))}
 						</thead>
@@ -553,7 +573,7 @@ function DataTableInner<TData>(
 								<tr>
 									<td
 										colSpan={columns.length + (finalEnableRowSelection ? 1 : 0)}
-										className="px-6 py-20 text-center"
+										className="px-10 py-20 text-center"
 									>
 										{emptyState || (
 											<div className="flex flex-col items-center justify-center">
@@ -633,17 +653,37 @@ function DataTableInner<TData>(
 											)}
 
 											{/* 数据单元格 */}
-											{row.getVisibleCells().map((cell) => (
-												<td
-													key={cell.id}
-													className={`${densityPadding[density]} text-sm text-gray-900`}
-												>
-													{flexRender(
-														cell.column.columnDef.cell,
-														cell.getContext(),
-													)}
-												</td>
-											))}
+											{row.getVisibleCells().map((cell) => {
+												// 获取列定义并计算对齐方式
+												const columnDef = cell.column
+													.columnDef as ProColumnDef<TData>;
+												const align =
+													columnDef.align ||
+													getDefaultAlign(columnDef.valueType);
+												const alignClass =
+													align === "left"
+														? "text-left"
+														: align === "center"
+															? "text-center"
+															: "text-right";
+
+												return (
+													<td
+														key={cell.id}
+														className={`${densityPadding[density]} ${alignClass} text-sm text-gray-900 border-r border-gray-200 last:border-r-0`}
+														style={{
+															minWidth: "120px",
+															paddingLeft: "8px",
+															paddingRight: "8px",
+														}}
+													>
+														{flexRender(
+															cell.column.columnDef.cell,
+															cell.getContext(),
+														)}
+													</td>
+												);
+											})}
 										</tr>
 									))
 							)}
