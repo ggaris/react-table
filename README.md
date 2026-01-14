@@ -34,6 +34,7 @@ bun run build
 - [分页功能详解](./docs/PAGINATION.md) - 分页和行选择优化说明
 - [Ref API 使用指南](./docs/REF_API.md) - 命令式 API 文档
 - [Request 模式详解](./docs/REQUEST_MODE.md) - 异步数据获取模式
+- [ValueType 使用指南](./docs/VALUETYPE.md) - 列类型自动格式化功能
 - [类型推断说明](./docs/TYPE_INFERENCE.md) - TypeScript 类型推断
 - [打包发布指南](./docs/PACKAGING.md) - 发布到 npm 的流程
 
@@ -94,6 +95,7 @@ bun run clean
 - ✅ **筛选** - 列头筛选，支持文本关键词筛选
 - ✅ **行选择** - Checkbox + 行点击混合模式，支持全选
 - ✅ **列配置** - 显示/隐藏列，配置持久化到 localStorage
+- ✅ **ValueType** - 列类型自动格式化，支持 money、percent、date、select 等 14 种类型
 
 ### 数据模式
 - ✅ **Data 模式** - 直接传入数据数组（前端分页）

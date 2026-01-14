@@ -11,6 +11,8 @@ import {
 	type VisibilityState,
 } from "@tanstack/react-table";
 import React from "react";
+import type { ProColumnDef } from "../../utils/valueType";
+import { processValueTypeColumns } from "../../utils/valueType";
 import { Checkbox } from "./checkbox";
 import { useTableConfig } from "./table-context";
 import { TableSkeleton } from "./table-skeleton";
@@ -76,8 +78,8 @@ export interface DataTableProps<TData> {
 	request?: (params: RequestParams) => Promise<RequestResult<TData>>;
 	/** 传递给 request 的额外参数 */
 	params?: Record<string, any>;
-	/** 列定义 */
-	columns: ColumnDef<TData>[];
+	/** 列定义 - 支持 valueType */
+	columns: ProColumnDef<TData>[];
 	/** localStorage 存储的 key,用于持久化列的显示/隐藏配置。如果提供，将自动启用列可见性控制 */
 	storageKey?: string;
 	/** 是否显示加载状态（data 模式使用） */
@@ -168,6 +170,12 @@ function DataTableInner<TData>(
 	const [requestData, setRequestData] = React.useState<TData[]>([]);
 	const [requestTotal, setRequestTotal] = React.useState(0);
 	const [requestLoading, setRequestLoading] = React.useState(false);
+
+	// 处理带有 valueType 的列定义
+	const processedColumns = React.useMemo<ProColumnDef<TData>[]>(
+		() => processValueTypeColumns(columns),
+		[columns],
+	);
 
 	// 判断使用哪种模式
 	const isRequestMode = !!request;
@@ -280,9 +288,9 @@ function DataTableInner<TData>(
 	}, [isRequestMode, fetchData]);
 
 	// 创建表格实例
-	const table = useReactTable({
+	const table = useReactTable<TData>({
 		data,
-		columns,
+		columns: processedColumns,
 		state: {
 			sorting,
 			columnVisibility,

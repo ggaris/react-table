@@ -19,3 +19,29 @@ export {
 	type TableProviderProps,
 	useTableConfig,
 } from "./components/table/table-context";
+
+// ValueType 相关导出
+export type {
+	AvatarConfig,
+	CodeConfig,
+	ColumnValueTypeConfig,
+	DateConfig,
+	DateTimeConfig,
+	ImageConfig,
+	MoneyConfig,
+	PercentConfig,
+	ProgressConfig,
+	SelectConfig,
+	TagConfig,
+	TimeConfig,
+	ValueType,
+	ValueTypeConfig,
+} from "./types/valueType";
+
+export {
+	defineColumn,
+	defineColumns,
+	processValueTypeColumn,
+	processValueTypeColumns,
+	type ProColumnDef,
+} from "./utils/valueType";
