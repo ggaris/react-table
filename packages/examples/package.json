@@ -1,0 +1,24 @@
+{
+	"name": "@r-table/examples",
+	"version": "0.2.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "bun --hot ./index.ts",
+		"build": "bun run ./index.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"r-table": "workspace:*",
+		"@tanstack/react-table": "^8.21.0",
+		"@faker-js/faker": "^10.2.0",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.2",
+		"tailwindcss": "^4.0.0"
+	},
+	"devDependencies": {
+		"@types/react": "^19.0.0",
+		"@types/react-dom": "^19.0.2",
+		"bun-plugin-tailwind": "^0.1.2"
+	}
+}

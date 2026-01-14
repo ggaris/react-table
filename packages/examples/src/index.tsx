@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
-import { RequestModeExample } from "./example/RequestModeExample";
-import { ServerPaginationExample } from "./example/ServerPaginationExample";
+import { RequestModeExample } from "./examples/RequestModeExample";
+import { ServerPaginationExample } from "./examples/ServerPaginationExample";
 
 function App() {
 	return (

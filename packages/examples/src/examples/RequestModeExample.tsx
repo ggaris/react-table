@@ -5,7 +5,7 @@ import {
 	type DataTableRef,
 	type RequestParams,
 	type RequestResult,
-} from "../components/table";
+} from "r-table";
 import { makeData } from "./makeData";
 
 type Person = {

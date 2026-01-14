@@ -1,6 +1,6 @@
 import type { ColumnDef } from "@tanstack/react-table";
 import React from "react";
-import { DataTable, type DataTableRef } from "../components/table";
+import { DataTable, type DataTableRef } from "r-table";
 import { makeData } from "./makeData";
 
 type Person = {

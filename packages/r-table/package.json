@@ -1,0 +1,51 @@
+{
+	"name": "r-table",
+	"version": "0.2.0",
+	"description": "一个功能丰富的 React 数据表格组件，基于 @tanstack/react-table 和 Tailwind CSS 构建",
+	"type": "module",
+	"main": "./dist/index.js",
+	"module": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"import": "./dist/index.js",
+			"types": "./dist/index.d.ts"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"scripts": {
+		"build": "bun run build:lib && bun run build:types",
+		"build:lib": "bun run ./build-lib.ts",
+		"build:types": "bun run ./build-types.ts",
+		"typecheck": "tsc --noEmit",
+		"prepublishOnly": "bun run build"
+	},
+	"keywords": [
+		"react",
+		"table",
+		"datatable",
+		"tanstack-table",
+		"tailwind",
+		"components"
+	],
+	"author": "Aris",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/aris/r-table.git",
+		"directory": "packages/r-table"
+	},
+	"peerDependencies": {
+		"@tanstack/react-table": "^8.21.0",
+		"react": "^18.0.0 || ^19.0.0",
+		"react-dom": "^18.0.0 || ^19.0.0",
+		"tailwindcss": "^4.0.0"
+	},
+	"devDependencies": {
+		"@types/react": "^19.2.7",
+		"@types/react-dom": "^19.0.2"
+	}
+}
