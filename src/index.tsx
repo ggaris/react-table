@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
+import { RequestModeExample } from "./example/RequestModeExample";
 import { ServerPaginationExample } from "./example/ServerPaginationExample";
 
 function App() {
@@ -19,7 +20,8 @@ function App() {
 				{/* 基础示例 */}
 				<section>
 					<h2 className="text-xl font-semibold text-gray-900 mb-4">基础示例</h2>
-					<ServerPaginationExample />
+					{/* <ServerPaginationExample /> */}
+					<RequestModeExample />
 				</section>
 			</div>
 		</div>

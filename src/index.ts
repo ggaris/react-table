@@ -8,6 +8,8 @@ export {
 	type DataTableProps,
 	type DataTableRef,
 	type DensityType,
+	type RequestParams,
+	type RequestResult,
 	TableSkeleton,
 	ToolBar,
 } from "./components/table";

@@ -4,6 +4,12 @@ export { Checkbox } from "./checkbox";
 export { ColumnFilter } from "./column-filter";
 export { ColumnHeader } from "./column-header";
 export { ColumnVisibility } from "./column-visibility";
-export { DataTable, type DataTableProps, type DataTableRef } from "./table";
+export {
+	DataTable,
+	type DataTableProps,
+	type DataTableRef,
+	type RequestParams,
+	type RequestResult,
+} from "./table";
 export { TableSkeleton } from "./table-skeleton";
 export { type DensityType, ToolBar } from "./toolbar";

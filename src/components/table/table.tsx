@@ -19,7 +19,7 @@ import { type DensityType, ToolBar } from "./toolbar";
  * DataTable Ref 暴露的方法
  */
 export interface DataTableRef<TData = unknown> {
-	/** 刷新表格（调用 onRefresh 回调） */
+	/** 刷新表格（调用 onRefresh 回调或重新执行 request） */
 	refresh: () => void;
 	/** 重置行选择 */
 	resetSelection: () => void;
@@ -35,6 +35,32 @@ export interface DataTableRef<TData = unknown> {
 	setPageSize: (pageSize: number) => void;
 	/** 获取当前页码信息 */
 	getPaginationState: () => { pageIndex: number; pageSize: number };
+	/** 重新加载数据（request 模式） */
+	reload: () => void;
+}
+
+/**
+ * Request 函数的参数类型
+ */
+export interface RequestParams {
+	/** 当前页码（从1开始） */
+	current: number;
+	/** 每页大小 */
+	size: number;
+	/** 额外的搜索/筛选参数 */
+	[key: string]: any;
+}
+
+/**
+ * Request 函数的返回结果类型
+ */
+export interface RequestResult<TData> {
+	/** 当前页的数据 */
+	data: TData[];
+	/** 数据总数 */
+	total: number;
+	/** 是否成功（可选） */
+	success?: boolean;
 }
 
 /**
@@ -43,13 +69,17 @@ export interface DataTableRef<TData = unknown> {
 export interface DataTableProps<TData> {
 	/** 表格行的唯一标识字段名 */
 	rowKey: keyof TData;
-	/** 表格数据 */
-	data: TData[];
+	/** 表格数据（与 request 二选一） */
+	data?: TData[];
+	/** 异步请求数据函数（与 data 二选一） */
+	request?: (params: RequestParams) => Promise<RequestResult<TData>>;
+	/** 传递给 request 的额外参数 */
+	params?: Record<string, any>;
 	/** 列定义 */
 	columns: ColumnDef<TData>[];
 	/** localStorage 存储的 key,用于持久化列的显示/隐藏配置。如果提供，将自动启用列可见性控制 */
 	storageKey?: string;
-	/** 是否显示加载状态 */
+	/** 是否显示加载状态（data 模式使用） */
 	loading?: boolean;
 	/** 是否启用行选择功能 */
 	enableRowSelection?: boolean;
@@ -69,7 +99,7 @@ export interface DataTableProps<TData> {
 	pageSizeOptions?: number[];
 	/** 是否显示工具栏 */
 	showToolBar?: boolean;
-	/** 刷新回调。如果提供，将自动在工具栏显示刷新按钮 */
+	/** 刷新回调。如果提供，将自动在工具栏显示刷新按钮（data 模式使用） */
 	onRefresh?: () => void;
 }
 
@@ -98,10 +128,12 @@ export interface DataTableProps<TData> {
 function DataTableInner<TData>(
 	{
 		rowKey,
-		data,
+		data: externalData,
+		request,
+		params,
 		columns,
 		storageKey,
-		loading = false,
+		loading: externalLoading = false,
 		enableRowSelection = false,
 		enableSorting = true,
 		enablePagination = true,
@@ -115,6 +147,16 @@ function DataTableInner<TData>(
 	}: DataTableProps<TData>,
 	ref: React.Ref<DataTableRef<TData>>,
 ) {
+	// request 模式的状态
+	const [requestData, setRequestData] = React.useState<TData[]>([]);
+	const [requestTotal, setRequestTotal] = React.useState(0);
+	const [requestLoading, setRequestLoading] = React.useState(false);
+
+	// 判断使用哪种模式
+	const isRequestMode = !!request;
+	const data = isRequestMode ? requestData : (externalData || []);
+	const loading = isRequestMode ? requestLoading : externalLoading;
+	const total = isRequestMode ? requestTotal : data.length;
 	// 密度状态
 	const [density, setDensity] = React.useState<DensityType>("default");
 
@@ -168,6 +210,42 @@ function DataTableInner<TData>(
 		}
 	}, [columnVisibility, storageKey]);
 
+	// request 模式下的数据获取函数
+	const fetchData = React.useCallback(async () => {
+		if (!request) return;
+
+		try {
+			setRequestLoading(true);
+			const result = await request({
+				current: pagination.pageIndex + 1, // 转换为从1开始
+				size: pagination.pageSize,
+				...params, // 传入额外参数
+			});
+
+			if (result.success === false) {
+				console.error("数据请求失败");
+				setRequestData([]);
+				setRequestTotal(0);
+			} else {
+				setRequestData(result.data);
+				setRequestTotal(result.total);
+			}
+		} catch (error) {
+			console.error("数据请求异常:", error);
+			setRequestData([]);
+			setRequestTotal(0);
+		} finally {
+			setRequestLoading(false);
+		}
+	}, [request, pagination.pageIndex, pagination.pageSize, params]);
+
+	// request 模式下，当分页或参数变化时自动加载数据
+	React.useEffect(() => {
+		if (isRequestMode) {
+			fetchData();
+		}
+	}, [isRequestMode, fetchData]);
+
 	// 创建表格实例
 	const table = useReactTable({
 		data,
@@ -188,9 +266,13 @@ function DataTableInner<TData>(
 		onPaginationChange: setPagination,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
-		getPaginationRowModel: enablePagination
-			? getPaginationRowModel()
+		// Request 模式使用手动分页，Data 模式使用前端分页
+		manualPagination: isRequestMode,
+		pageCount: isRequestMode
+			? Math.ceil(total / pagination.pageSize)
 			: undefined,
+		getPaginationRowModel:
+			enablePagination && !isRequestMode ? getPaginationRowModel() : undefined,
 	});
 
 	// 当行选择变化时触发回调
@@ -208,8 +290,15 @@ function DataTableInner<TData>(
 		ref,
 		() => ({
 			refresh: () => {
-				if (onRefresh) {
+				if (isRequestMode) {
+					fetchData();
+				} else if (onRefresh) {
 					onRefresh();
+				}
+			},
+			reload: () => {
+				if (isRequestMode) {
+					fetchData();
 				}
 			},
 			resetSelection: () => {
@@ -234,7 +323,15 @@ function DataTableInner<TData>(
 				return pagination;
 			},
 		}),
-		[onRefresh, table, rowSelection, pagination, initialPageSize],
+		[
+			isRequestMode,
+			fetchData,
+			onRefresh,
+			table,
+			rowSelection,
+			pagination,
+			initialPageSize,
+		],
 	);
 
 	// 处理行点击 - 同时切换行选择状态
@@ -267,10 +364,14 @@ function DataTableInner<TData>(
 					table={table}
 					showColumnVisibility={!!storageKey}
 					showDensity
-					showRefresh={!!onRefresh}
+					showRefresh={isRequestMode || !!onRefresh}
 					density={density}
 					onDensityChange={setDensity}
-					onRefresh={onRefresh}
+					onRefresh={
+						isRequestMode
+							? fetchData
+							: onRefresh
+					}
 				/>
 			)}
 
@@ -514,7 +615,7 @@ function DataTableInner<TData>(
 						<span className="text-gray-600">
 							共{" "}
 							<span className="font-semibold text-gray-900">
-								{table.getFilteredRowModel().rows.length}
+								{total}
 							</span>{" "}
 							条数据
 						</span>
