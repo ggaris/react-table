@@ -150,7 +150,36 @@ export type ValueTypeConfig =
 	| TagConfig;
 
 /**
- * 列的 ValueType 配置
+ * ValueType 到配置类型的映射
+ */
+export interface ValueTypeConfigMap {
+	text: never;
+	digit: never;
+	money: MoneyConfig;
+	percent: PercentConfig;
+	date: DateConfig;
+	dateTime: DateTimeConfig;
+	time: TimeConfig;
+	dateRange: never;
+	dateTimeRange: never;
+	select: SelectConfig;
+	progress: ProgressConfig;
+	avatar: AvatarConfig;
+	image: ImageConfig;
+	code: CodeConfig;
+	jsonCode: never;
+	tag: TagConfig;
+	option: never;
+}
+
+/**
+ * 根据 ValueType 获取对应的配置类型
+ */
+export type GetConfigByValueType<T extends ValueType> =
+	ValueTypeConfigMap[T] extends never ? undefined : ValueTypeConfigMap[T];
+
+/**
+ * 列的 ValueType 配置（无泛型版本）
  */
 export interface ColumnValueTypeConfig<TData = unknown> {
 	/** ValueType 类型 */
@@ -160,3 +189,39 @@ export interface ColumnValueTypeConfig<TData = unknown> {
 	/** 自定义渲染函数（优先级高于 valueType） */
 	render?: (value: unknown, record: TData, index: number) => React.ReactNode;
 }
+
+/**
+ * 列的 ValueType 配置（带类型约束的版本）
+ * 根据 valueType 自动约束 fieldProps 类型
+ */
+export type TypedColumnValueTypeConfig<
+	TData = unknown,
+	T extends ValueType = ValueType,
+> = {
+	/** ValueType 类型 */
+	valueType?: T;
+	/** ValueType 配置，根据 valueType 自动推断类型 */
+	fieldProps?: GetConfigByValueType<T>;
+	/** 自定义渲染函数（优先级高于 valueType） */
+	render?: (value: unknown, record: TData, index: number) => React.ReactNode;
+};
+
+/**
+ * 创建类型安全的列配置辅助类型
+ * 用于确保 valueType 和 fieldProps 类型匹配
+ */
+export type CreateColumnConfig<TData = unknown> =
+	| TypedColumnValueTypeConfig<TData, "money">
+	| TypedColumnValueTypeConfig<TData, "percent">
+	| TypedColumnValueTypeConfig<TData, "date">
+	| TypedColumnValueTypeConfig<TData, "dateTime">
+	| TypedColumnValueTypeConfig<TData, "time">
+	| TypedColumnValueTypeConfig<TData, "select">
+	| TypedColumnValueTypeConfig<TData, "progress">
+	| TypedColumnValueTypeConfig<TData, "avatar">
+	| TypedColumnValueTypeConfig<TData, "image">
+	| TypedColumnValueTypeConfig<TData, "code">
+	| TypedColumnValueTypeConfig<TData, "tag">
+	| TypedColumnValueTypeConfig<TData, "text">
+	| TypedColumnValueTypeConfig<TData, "digit">
+	| TypedColumnValueTypeConfig<TData, "jsonCode">;

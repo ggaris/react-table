@@ -8,7 +8,7 @@ import type {
 	ColumnValueTypeConfig,
 	ValueType,
 	ValueTypeConfig,
-} from "../../types/valueType";
+} from "../types/valueType";
 import { getValueTypeRender } from "../components/table/value-type-render";
 
 /**

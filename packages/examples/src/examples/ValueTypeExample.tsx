@@ -1,6 +1,6 @@
 import type { ProColumnDef } from "r-table";
-import React from "react";
 import { DataTable, type DataTableRef } from "r-table";
+import React from "react";
 
 type Product = {
 	id: string;
