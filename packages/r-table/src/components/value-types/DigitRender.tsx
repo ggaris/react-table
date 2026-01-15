@@ -11,13 +11,15 @@ export function DigitRender({ value }: DigitRenderProps) {
 	// 处理空值
 	if (value === null || value === undefined) {
 		return (
-			<span className="inline-flex items-center gap-1.5 text-slate-400 text-sm">
-				<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<title>无数据</title>
-					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-				</svg>
-				<span>-</span>
-			</span>
+			<div className="flex justify-end">
+				<span className="inline-flex items-center gap-1.5 text-slate-400 text-sm">
+					<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<title>无数据</title>
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+					</svg>
+					<span>-</span>
+				</span>
+			</div>
 		);
 	}
 
@@ -25,13 +27,15 @@ export function DigitRender({ value }: DigitRenderProps) {
 	const num = Number(value);
 	if (Number.isNaN(num)) {
 		return (
-			<span className="inline-flex items-center gap-1.5 px-2 py-1 bg-red-50 text-red-600 text-xs rounded-md border border-red-200">
-				<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-					<title>错误</title>
-					<path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-				</svg>
-				<span>无效</span>
-			</span>
+			<div className="flex justify-end">
+				<span className="inline-flex items-center gap-1.5 px-2 py-1 bg-red-50 text-red-600 text-xs rounded-md border border-red-200">
+					<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+						<title>错误</title>
+						<path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+					</svg>
+					<span>无效</span>
+				</span>
+			</div>
 		);
 	}
 
@@ -46,16 +50,18 @@ export function DigitRender({ value }: DigitRenderProps) {
 	const isKilo = magnitude >= 1000;
 
 	return (
-		<span className="inline-flex items-baseline gap-1">
-			<span className="font-mono text-sm font-medium text-slate-900 tabular-nums transition-colors duration-200">
-				{formatted}
+		<div className="flex justify-end">
+			<span className="inline-flex items-baseline gap-1">
+				<span className="font-mono text-sm font-medium text-slate-900 tabular-nums transition-colors duration-200">
+					{formatted}
+				</span>
+				{isMega && (
+					<span className="text-xs text-slate-500 font-medium">M</span>
+				)}
+				{isKilo && !isMega && (
+					<span className="text-xs text-slate-500 font-medium">K</span>
+				)}
 			</span>
-			{isMega && (
-				<span className="text-xs text-slate-500 font-medium">M</span>
-			)}
-			{isKilo && !isMega && (
-				<span className="text-xs text-slate-500 font-medium">K</span>
-			)}
-		</span>
+		</div>
 	);
 }

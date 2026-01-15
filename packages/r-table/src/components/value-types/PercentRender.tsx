@@ -16,13 +16,15 @@ export function PercentRender({ value, config = {} }: PercentRenderProps) {
 	// 处理空值
 	if (value === null || value === undefined) {
 		return (
-			<span className="inline-flex items-center gap-1.5 text-slate-400 text-sm">
-				<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<title>无数据</title>
-					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-				</svg>
-				<span>-</span>
-			</span>
+			<div className="flex justify-center">
+				<span className="inline-flex items-center gap-1.5 text-slate-400 text-sm">
+					<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<title>无数据</title>
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+					</svg>
+					<span>-</span>
+				</span>
+			</div>
 		);
 	}
 
@@ -30,13 +32,15 @@ export function PercentRender({ value, config = {} }: PercentRenderProps) {
 	const num = Number(value);
 	if (Number.isNaN(num)) {
 		return (
-			<span className="inline-flex items-center gap-1.5 px-2 py-1 bg-red-50 text-red-600 text-xs rounded-md border border-red-200">
-				<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-					<title>错误</title>
-					<path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-				</svg>
-				<span>无效</span>
-			</span>
+			<div className="flex justify-center">
+				<span className="inline-flex items-center gap-1.5 px-2 py-1 bg-red-50 text-red-600 text-xs rounded-md border border-red-200">
+					<svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+						<title>错误</title>
+						<path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+					</svg>
+					<span>无效</span>
+				</span>
+			</div>
 		);
 	}
 
@@ -73,38 +77,42 @@ export function PercentRender({ value, config = {} }: PercentRenderProps) {
 	// 如果显示进度条模式
 	if (showProgressBar) {
 		return (
-			<div className="inline-flex items-center gap-2 min-w-[160px]">
-				{/* 进度条 */}
-				<div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-					<div
-						className={`h-full ${getProgressBarColor()} transition-all duration-300 rounded-full`}
-						style={{ width: `${Math.min(percentage, 100)}%` }}
-					/>
-				</div>
+			<div className="flex justify-center">
+				<div className="inline-flex items-center gap-2 min-w-[160px]">
+					{/* 进度条 */}
+					<div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+						<div
+							className={`h-full ${getProgressBarColor()} transition-all duration-300 rounded-full`}
+							style={{ width: `${Math.min(percentage, 100)}%` }}
+						/>
+					</div>
 
-				{/* 百分比文字 */}
-				<span className={`font-mono text-xs font-semibold tabular-nums ${getColor()} min-w-[40px] text-right`}>
-					{formatted}
-					{showSymbol && <span className="ml-0.5">%</span>}
-				</span>
+					{/* 百分比文字 */}
+					<span className={`font-mono text-xs font-semibold tabular-nums ${getColor()} min-w-[40px] text-right`}>
+						{formatted}
+						{showSymbol && <span className="ml-0.5">%</span>}
+					</span>
+				</div>
 			</div>
 		);
 	}
 
 	// 默认显示模式（指示器+文字）
 	return (
-		<span className="inline-flex items-center gap-2">
-			{/* 视觉指示器 */}
-			<span className="relative flex items-center">
-				<span className={`w-1.5 h-1.5 rounded-full ${getIndicatorColor()}`} />
-				<span className={`absolute w-1.5 h-1.5 rounded-full ${getIndicatorColor()} animate-ping opacity-75`} />
-			</span>
+		<div className="flex justify-center">
+			<span className="inline-flex items-center gap-2">
+				{/* 视觉指示器 */}
+				<span className="relative flex items-center">
+					<span className={`w-1.5 h-1.5 rounded-full ${getIndicatorColor()}`} />
+					<span className={`absolute w-1.5 h-1.5 rounded-full ${getIndicatorColor()} animate-ping opacity-75`} />
+				</span>
 
-			{/* 百分比值 */}
-			<span className={`font-mono text-sm font-semibold tabular-nums transition-colors duration-200 ${getColor()}`}>
-				{formatted}
-				{showSymbol && <span className="text-xs ml-0.5">%</span>}
+				{/* 百分比值 */}
+				<span className={`font-mono text-sm font-semibold tabular-nums transition-colors duration-200 ${getColor()}`}>
+					{formatted}
+					{showSymbol && <span className="text-xs ml-0.5">%</span>}
+				</span>
 			</span>
-		</span>
+		</div>
 	);
 }

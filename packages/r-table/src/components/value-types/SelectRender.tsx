@@ -16,13 +16,15 @@ export function SelectRender({ value, config = {} }: SelectRenderProps) {
 	// 处理空值
 	if (!value) {
 		return (
-			<span className="inline-flex items-center gap-1.5 text-slate-400 text-sm">
-				<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<title>无数据</title>
-					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-				</svg>
-				<span>-</span>
-			</span>
+			<div className="flex justify-center">
+				<span className="inline-flex items-center gap-1.5 text-slate-400 text-sm">
+					<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<title>无数据</title>
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+					</svg>
+					<span>-</span>
+				</span>
+			</div>
 		);
 	}
 
@@ -31,9 +33,11 @@ export function SelectRender({ value, config = {} }: SelectRenderProps) {
 	// 没有配置的值，显示原始值
 	if (!enumConfig) {
 		return (
-			<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-md border border-slate-200">
-				{String(value)}
-			</span>
+			<div className="flex justify-center">
+				<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-md border border-slate-200">
+					{String(value)}
+				</span>
+			</div>
 		);
 	}
 
@@ -77,24 +81,26 @@ export function SelectRender({ value, config = {} }: SelectRenderProps) {
 	const styles = getStatusStyles();
 
 	return (
-		<span
-			className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md border transition-all duration-200 cursor-default ${styles.container}`}
-		>
-			<svg
-				className={`w-3.5 h-3.5 ${styles.icon}`}
-				fill="none"
-				stroke="currentColor"
-				viewBox="0 0 24 24"
+		<div className="flex justify-center">
+			<span
+				className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md border transition-all duration-200 cursor-default ${styles.container}`}
 			>
-				<title>{enumConfig.text}</title>
-				<path
-					strokeLinecap="round"
-					strokeLinejoin="round"
-					strokeWidth={2}
-					d={styles.iconPath}
-				/>
-			</svg>
-			<span>{enumConfig.text}</span>
-		</span>
+				<svg
+					className={`w-3.5 h-3.5 ${styles.icon}`}
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+				>
+					<title>{enumConfig.text}</title>
+					<path
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						strokeWidth={2}
+						d={styles.iconPath}
+					/>
+				</svg>
+				<span>{enumConfig.text}</span>
+			</span>
+		</div>
 	);
 }
