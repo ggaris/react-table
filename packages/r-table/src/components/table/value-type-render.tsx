@@ -6,7 +6,6 @@
 import type React from "react";
 import type {
 	AvatarConfig,
-	CodeConfig,
 	DateConfig,
 	DateTimeConfig,
 	GetConfigByValueType,
@@ -23,7 +22,6 @@ import type {
 } from "../../types/valueType";
 import {
 	AvatarRender,
-	CodeRender,
 	DateRender,
 	DateTimeRender,
 	DigitRender,

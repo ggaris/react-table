@@ -103,6 +103,7 @@ export function ValueTypeExample() {
 				accessorKey: "avatar",
 				header: "头像",
 				valueType: "avatar",
+				fixed: "left",
 				fieldProps: {
 					size: "default",
 					shape: "circle",

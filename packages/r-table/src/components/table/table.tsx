@@ -387,18 +387,15 @@ function DataTableInner<TData>(
 		const checkboxWidth = 64; // w-16 = 4rem = 64px
 		const defaultColumnWidth = 120; // 默认列宽，与 minWidth 一致
 
-		// 获取所有可见列
-		const visibleColumns = processedColumns.filter((col) => {
-			const columnDef = col as ProColumnDef<TData>;
-			return columnDef.id !== undefined;
-		});
-
 		// 计算左固定列的偏移量
 		let leftOffset = finalEnableRowSelection ? checkboxWidth : 0;
-		for (const col of visibleColumns) {
+		for (const col of processedColumns) {
 			const columnDef = col as ProColumnDef<TData>;
-			if (columnDef.fixed === "left") {
-				info.set(columnDef.id as string, {
+			const columnId = (columnDef.id || (columnDef as any).accessorKey) as
+				| string
+				| undefined;
+			if (columnDef.fixed === "left" && columnId) {
+				info.set(columnId, {
 					left: leftOffset,
 					isFixed: true,
 				});
@@ -408,10 +405,13 @@ function DataTableInner<TData>(
 
 		// 计算右固定列的偏移量
 		let rightOffset = 0;
-		for (let i = visibleColumns.length - 1; i >= 0; i--) {
-			const columnDef = visibleColumns[i] as ProColumnDef<TData>;
-			if (columnDef.fixed === "right") {
-				info.set(columnDef.id as string, {
+		for (let i = processedColumns.length - 1; i >= 0; i--) {
+			const columnDef = processedColumns[i] as ProColumnDef<TData>;
+			const columnId = (columnDef.id || (columnDef as any).accessorKey) as
+				| string
+				| undefined;
+			if (columnDef.fixed === "right" && columnId) {
+				info.set(columnId, {
 					right: rightOffset,
 					isFixed: true,
 				});
@@ -433,7 +433,6 @@ function DataTableInner<TData>(
 			const style: React.CSSProperties = {
 				position: "sticky",
 				zIndex: 10,
-				backgroundColor: "inherit",
 			};
 
 			if (fixedInfo.left !== undefined) {
@@ -495,13 +494,13 @@ function DataTableInner<TData>(
 						className="min-w-full border-collapse table-fixed"
 						style={{ width: "max-content" }}
 					>
-						<thead className="bg-linear-to-b from-gray-100 to-gray-50/80">
+						<thead className="bg-linear-to-b from-gray-100 to-gray-50">
 							{table.getHeaderGroups().map((headerGroup) => (
-								<tr key={headerGroup.id} className="border-b border-gray-300">
+								<tr key={headerGroup.id} className="border-b border-gray-300 ">
 									{/* 行选择列 */}
 									{finalEnableRowSelection && (
 										<th
-											className={`${densityHeaderPadding[density]} w-16 text-center sticky left-0 bg-linear-to-b from-gray-100 to-gray-50/80 z-10 border-r border-gray-300 bg-white z-10`}
+											className={`${densityHeaderPadding[density]} w-16 text-center sticky left-0 bg-linear-to-b from-gray-100 to-gray-50 border-r border-gray-300 bg-white z-10`}
 										>
 											<Checkbox
 												checked={table.getIsAllPageRowsSelected()}
@@ -531,13 +530,16 @@ function DataTableInner<TData>(
 													: "text-right";
 
 										// 获取固定列样式
-										const fixedStyle = getFixedStyle(columnDef.id as string);
+										const fixedStyle = getFixedStyle(
+											(columnDef.id ||
+												(columnDef as any).accessorKey) as string,
+										);
 
 										return (
 											<th
 												key={header.id}
 												colSpan={header.colSpan}
-												className={`${densityHeaderPadding[density]} ${alignClass} text-xs font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-300 border-r border-gray-200 last:border-r-0`}
+												className={`${densityHeaderPadding[density]} ${alignClass} text-xs font-semibold text-gray-800 uppercase tracking-wide border-b border-r border-gray-200 last:border-r-0 bg-gray-50`}
 												style={{ minWidth: "120px", ...fixedStyle }}
 											>
 												<div className="flex items-center gap-2">
@@ -653,7 +655,7 @@ function DataTableInner<TData>(
 									>
 										{emptyState || (
 											<div className="flex flex-col items-center justify-center">
-												<div className="w-20 h-20 bg-linear-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mb-4 shadow-sm ring-1 ring-gray-200/50">
+												<div className="w-20 h-20 bg-linear-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mb-4 shadow-sm ring-1 ring-gray-200">
 													<svg
 														className="w-10 h-10 text-gray-400"
 														fill="none"
@@ -709,7 +711,7 @@ function DataTableInner<TData>(
 										focus:outline-none
 										${
 											finalEnableRowSelection && row.getIsSelected()
-												? "bg-blue-50/80 hover:bg-blue-100/80"
+												? "bg-blue-50 hover:bg-blue-100"
 												: "bg-white hover:bg-gray-50"
 										}
 										${finalEnableRowSelection || onRowClick ? "cursor-pointer" : ""}
@@ -718,7 +720,9 @@ function DataTableInner<TData>(
 											{/* 行选择 Checkbox */}
 											{finalEnableRowSelection && (
 												<td
-													className={`${densityPadding[density]} w-16 text-center sticky left-0 bg-white border-r border-gray-300 z-10`}
+													className={`${densityPadding[density]} w-16 text-center sticky left-0 border-r border-gray-300 z-10 ${
+														row.getIsSelected() ? "bg-blue-50" : "bg-white"
+													}`}
 												>
 													<Checkbox
 														checked={row.getIsSelected()}
@@ -745,13 +749,16 @@ function DataTableInner<TData>(
 
 												// 获取固定列样式
 												const fixedStyle = getFixedStyle(
-													columnDef.id as string,
+													(columnDef.id ||
+														(columnDef as any).accessorKey) as string,
 												);
 
 												return (
 													<td
 														key={cell.id}
-														className={`${densityPadding[density]} ${alignClass} text-sm text-gray-900 border-r border-gray-200 last:border-r-0`}
+														className={`${densityPadding[density]} ${alignClass} text-sm text-gray-900 border-r border-gray-200 last:border-r-0 ${
+															row.getIsSelected() ? "bg-blue-50" : "bg-white"
+														}`}
 														style={{
 															minWidth: "120px",
 															paddingLeft: "8px",
