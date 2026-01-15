@@ -501,7 +501,7 @@ function DataTableInner<TData>(
 									{/* 行选择列 */}
 									{finalEnableRowSelection && (
 										<th
-											className={`${densityHeaderPadding[density]} w-16 text-center sticky left-0 bg-linear-to-b from-gray-100 to-gray-50/80 z-10`}
+											className={`${densityHeaderPadding[density]} w-16 text-center sticky left-0 bg-linear-to-b from-gray-100 to-gray-50/80 z-10 border-r border-gray-300 bg-white z-10`}
 										>
 											<Checkbox
 												checked={table.getIsAllPageRowsSelected()}
@@ -718,7 +718,7 @@ function DataTableInner<TData>(
 											{/* 行选择 Checkbox */}
 											{finalEnableRowSelection && (
 												<td
-													className={`${densityPadding[density]} w-16 text-center sticky left-0 bg-inherit`}
+													className={`${densityPadding[density]} w-16 text-center sticky left-0 bg-white border-r border-gray-300 z-10`}
 												>
 													<Checkbox
 														checked={row.getIsSelected()}
@@ -744,7 +744,9 @@ function DataTableInner<TData>(
 															: "text-right";
 
 												// 获取固定列样式
-												const fixedStyle = getFixedStyle(columnDef.id as string);
+												const fixedStyle = getFixedStyle(
+													columnDef.id as string,
+												);
 
 												return (
 													<td
