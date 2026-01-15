@@ -540,7 +540,11 @@ function DataTableInner<TData>(
 												key={header.id}
 												colSpan={header.colSpan}
 												className={`${densityHeaderPadding[density]} ${alignClass} text-xs font-semibold text-gray-800 uppercase tracking-wide border-b border-r border-gray-200 last:border-r-0 bg-gray-50`}
-												style={{ minWidth: "120px", ...fixedStyle }}
+												style={{
+													minWidth: "120px",
+													backgroundColor: "#f9fafb",
+													...fixedStyle,
+												}}
 											>
 												<div className="flex items-center gap-2">
 													{/* 列标题 */}

@@ -38,7 +38,7 @@ function App() {
 	return (
 		<div className="min-h-screen bg-gray-50 p-8">
 			<Navigation currentRoute={currentRoute} />
-			<div className="max-w-7xl mx-auto">
+			<div className="max-w-full mx-auto *:mt-8 bg-white rounded-lg shadow-sm p-20">
 				<section>{renderContent()}</section>
 			</div>
 		</div>

@@ -112,6 +112,7 @@ export function ValueTypeExample() {
 			{
 				accessorKey: "name",
 				header: "产品名称",
+				fixed: "left",
 				valueType: "text",
 			},
 			{
@@ -210,6 +211,7 @@ export function ValueTypeExample() {
 			{
 				accessorKey: "progress",
 				header: "完成进度",
+				fixed: "right",
 				valueType: "progress",
 				fieldProps: {
 					showInfo: true,
@@ -226,7 +228,7 @@ export function ValueTypeExample() {
 	);
 
 	return (
-		<div className="space-y-4">
+		<div className="space-y-4 space-x-3">
 			<div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
 				<h3 className="font-semibold text-purple-900 mb-3">
 					🎨 ValueType 示例
