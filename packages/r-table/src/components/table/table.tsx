@@ -1,5 +1,4 @@
 import {
-	type ColumnDef,
 	flexRender,
 	getCoreRowModel,
 	getPaginationRowModel,
@@ -566,7 +565,8 @@ function DataTableInner<TData>(
 										const columnId = (columnDef.id ||
 											(columnDef as any).accessorKey) as string;
 										const fixedStyle = getFixedStyle(columnId);
-										const isLast = headerIndex === headerGroup.headers.length - 1;
+										const isLast =
+											headerIndex === headerGroup.headers.length - 1;
 										const borderClass = getColumnBorderClass(columnId, isLast);
 
 										return (
@@ -789,8 +789,12 @@ function DataTableInner<TData>(
 												const columnId = (columnDef.id ||
 													(columnDef as any).accessorKey) as string;
 												const fixedStyle = getFixedStyle(columnId);
-												const isLast = cellIndex === row.getVisibleCells().length - 1;
-												const borderClass = getColumnBorderClass(columnId, isLast);
+												const isLast =
+													cellIndex === row.getVisibleCells().length - 1;
+												const borderClass = getColumnBorderClass(
+													columnId,
+													isLast,
+												);
 
 												return (
 													<td
