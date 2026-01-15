@@ -422,7 +422,7 @@ function DataTableInner<TData>(
 		return info;
 	}, [processedColumns, finalEnableRowSelection]);
 
-	// 获取固定列的样式
+	// 获取固定列的样式和类名
 	const getFixedStyle = React.useCallback(
 		(columnId: string | undefined) => {
 			if (!columnId) return {};
@@ -432,20 +432,41 @@ function DataTableInner<TData>(
 
 			const style: React.CSSProperties = {
 				position: "sticky",
-				zIndex: 10,
+				zIndex: 20,
 			};
 
 			if (fixedInfo.left !== undefined) {
 				style.left = `${fixedInfo.left}px`;
-				style.boxShadow = "2px 0 4px rgba(0, 0, 0, 0.08)";
 			}
 
 			if (fixedInfo.right !== undefined) {
 				style.right = `${fixedInfo.right}px`;
-				style.boxShadow = "-2px 0 4px rgba(0, 0, 0, 0.08)";
 			}
 
 			return style;
+		},
+		[fixedColumnsInfo],
+	);
+
+	// 获取列的边框类名（使用伪元素实现统一的边框样式）
+	const getColumnBorderClass = React.useCallback(
+		(columnId: string | undefined, isLast: boolean) => {
+			if (!columnId || isLast) return "";
+
+			const fixedInfo = fixedColumnsInfo.get(columnId);
+
+			// 固定列使用更深的边框和阴影来突出显示
+			if (fixedInfo?.isFixed) {
+				if (fixedInfo.left !== undefined) {
+					return "after:content-[''] after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-300 after:pointer-events-none after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]";
+				}
+				if (fixedInfo.right !== undefined) {
+					return "before:content-[''] before:absolute before:top-0 before:left-0 before:bottom-0 before:w-[1px] before:bg-gray-300 before:pointer-events-none before:shadow-[-2px_0_4px_rgba(0,0,0,0.08)]";
+				}
+			}
+
+			// 普通列使用标准边框
+			return "after:content-[''] after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-200 after:pointer-events-none";
 		},
 		[fixedColumnsInfo],
 	);
@@ -500,7 +521,7 @@ function DataTableInner<TData>(
 									{/* 行选择列 */}
 									{finalEnableRowSelection && (
 										<th
-											className={`${densityHeaderPadding[density]} w-16 text-center sticky left-0 bg-linear-to-b from-gray-100 to-gray-50 border-r border-gray-300 bg-white z-10`}
+											className={`${densityHeaderPadding[density]} w-16 text-center sticky left-0 bg-linear-to-b from-gray-100 to-gray-50 bg-white z-10 relative after:content-[''] after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-300 after:pointer-events-none`}
 										>
 											<Checkbox
 												checked={table.getIsAllPageRowsSelected()}
@@ -516,7 +537,7 @@ function DataTableInner<TData>(
 										</th>
 									)}
 
-									{headerGroup.headers.map((header) => {
+									{headerGroup.headers.map((header, headerIndex) => {
 										// 获取列定义并计算对齐方式
 										const columnDef = header.column
 											.columnDef as ProColumnDef<TData>;
@@ -529,17 +550,18 @@ function DataTableInner<TData>(
 													? "text-center"
 													: "text-right";
 
-										// 获取固定列样式
-										const fixedStyle = getFixedStyle(
-											(columnDef.id ||
-												(columnDef as any).accessorKey) as string,
-										);
+										// 获取固定列样式和边框类名
+										const columnId = (columnDef.id ||
+											(columnDef as any).accessorKey) as string;
+										const fixedStyle = getFixedStyle(columnId);
+										const isLast = headerIndex === headerGroup.headers.length - 1;
+										const borderClass = getColumnBorderClass(columnId, isLast);
 
 										return (
 											<th
 												key={header.id}
 												colSpan={header.colSpan}
-												className={`${densityHeaderPadding[density]} ${alignClass} text-xs font-semibold text-gray-800 uppercase tracking-wide border-b border-r border-gray-200 last:border-r-0 bg-gray-50`}
+												className={`${densityHeaderPadding[density]} ${alignClass} text-xs font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-200 bg-gray-50 relative ${borderClass}`}
 												style={{
 													minWidth: "120px",
 													backgroundColor: "#f9fafb",
@@ -724,7 +746,7 @@ function DataTableInner<TData>(
 											{/* 行选择 Checkbox */}
 											{finalEnableRowSelection && (
 												<td
-													className={`${densityPadding[density]} w-16 text-center sticky left-0 border-r border-gray-300 z-10 ${
+													className={`${densityPadding[density]} w-16 text-center sticky left-0 z-10 relative after:content-[''] after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-300 after:pointer-events-none ${
 														row.getIsSelected() ? "bg-blue-50" : "bg-white"
 													}`}
 												>
@@ -737,7 +759,7 @@ function DataTableInner<TData>(
 											)}
 
 											{/* 数据单元格 */}
-											{row.getVisibleCells().map((cell) => {
+											{row.getVisibleCells().map((cell, cellIndex) => {
 												// 获取列定义并计算对齐方式
 												const columnDef = cell.column
 													.columnDef as ProColumnDef<TData>;
@@ -751,23 +773,24 @@ function DataTableInner<TData>(
 															? "text-center"
 															: "text-right";
 
-												// 获取固定列样式
-												const fixedStyle = getFixedStyle(
-													(columnDef.id ||
-														(columnDef as any).accessorKey) as string,
-												);
+												// 获取固定列样式和边框类名
+												const columnId = (columnDef.id ||
+													(columnDef as any).accessorKey) as string;
+												const fixedStyle = getFixedStyle(columnId);
+												const isLast = cellIndex === row.getVisibleCells().length - 1;
+												const borderClass = getColumnBorderClass(columnId, isLast);
 
 												return (
 													<td
 														key={cell.id}
-														className={`${densityPadding[density]} ${alignClass} text-sm text-gray-900 border-r border-gray-200 last:border-r-0 ${
+														className={`${densityPadding[density]} ${alignClass} text-sm text-gray-900 ${
 															row.getIsSelected() ? "bg-blue-50" : "bg-white"
-														}`}
+														} relative ${borderClass}`}
 														style={{
+															...fixedStyle,
 															minWidth: "120px",
 															paddingLeft: "8px",
 															paddingRight: "8px",
-															...fixedStyle,
 														}}
 													>
 														{flexRender(
