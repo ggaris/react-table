@@ -394,6 +394,12 @@ function DataTableInner<TData>(
 			const columnId = (columnDef.id || (columnDef as any).accessorKey) as
 				| string
 				| undefined;
+
+			// 跳过不可见的列
+			if (columnId && columnVisibility[columnId] === false) {
+				continue;
+			}
+
 			if (columnDef.fixed === "left" && columnId) {
 				info.set(columnId, {
 					left: leftOffset,
@@ -410,6 +416,12 @@ function DataTableInner<TData>(
 			const columnId = (columnDef.id || (columnDef as any).accessorKey) as
 				| string
 				| undefined;
+
+			// 跳过不可见的列
+			if (columnId && columnVisibility[columnId] === false) {
+				continue;
+			}
+
 			if (columnDef.fixed === "right" && columnId) {
 				info.set(columnId, {
 					right: rightOffset,
@@ -420,7 +432,7 @@ function DataTableInner<TData>(
 		}
 
 		return info;
-	}, [processedColumns, finalEnableRowSelection]);
+	}, [processedColumns, finalEnableRowSelection, columnVisibility]);
 
 	// 获取固定列的样式和类名
 	const getFixedStyle = React.useCallback(

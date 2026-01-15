@@ -208,21 +208,6 @@ export function ValueTypeExample() {
 					format: "HH:mm:ss",
 				},
 			},
-			{
-				accessorKey: "progress",
-				header: "完成进度",
-				fixed: "right",
-				valueType: "progress",
-				fieldProps: {
-					showInfo: true,
-					color: "bg-blue-500",
-				},
-			},
-			{
-				accessorKey: "metadata",
-				header: "元数据",
-				valueType: "jsonCode",
-			},
 		],
 		[],
 	);
