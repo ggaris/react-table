@@ -5,11 +5,21 @@
 
 import React from "react";
 import type { AvatarConfig } from "../../types/valueType";
+import { EmptyState, Centered, Skeleton } from "../ui";
+import { UserIcon } from "../ui/icons";
+import { cn } from "../../styles/constants";
 
 interface AvatarRenderProps {
 	value: unknown;
 	config?: AvatarConfig;
 }
+
+// 尺寸映射
+const SIZE_MAP = {
+	small: "w-6 h-6",
+	default: "w-8 h-8",
+	large: "w-12 h-12",
+} as const;
 
 export function AvatarRender({ value, config = {} }: AvatarRenderProps) {
 	const { size = "default", shape = "circle" } = config;
@@ -18,65 +28,37 @@ export function AvatarRender({ value, config = {} }: AvatarRenderProps) {
 
 	// 处理空值
 	if (!value) {
-		return (
-			<div className="flex justify-center">
-				<span className="inline-flex items-center gap-1.5 text-slate-400 text-sm">
-					<svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<title>无数据</title>
-						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-					</svg>
-					<span>-</span>
-				</span>
-			</div>
-		);
+		return <EmptyState icon={<UserIcon />} />;
 	}
 
-	const sizeMap = {
-		small: "w-6 h-6",
-		default: "w-8 h-8",
-		large: "w-12 h-12",
-	};
-
-	const sizeClass =
-		typeof size === "number" ? "" : sizeMap[size] || sizeMap.default;
+	const sizeClass = typeof size === "number" ? "" : SIZE_MAP[size] || SIZE_MAP.default;
 	const style = typeof size === "number" ? { width: size, height: size } : {};
 	const shapeClass = shape === "circle" ? "rounded-full" : "rounded-md";
 
-	// 处理加载和错误状态
+	// 处理错误状态
 	if (error) {
 		return (
-			<div className="flex justify-center">
+			<Centered>
 				<div
-					className={`${sizeClass} ${shapeClass} bg-slate-100 border-2 border-slate-200 flex items-center justify-center`}
+					className={cn(sizeClass, shapeClass, "bg-slate-100 border-2 border-slate-200 flex items-center justify-center")}
 					style={style}
 				>
-					<svg
-						className="w-1/2 h-1/2 text-slate-400"
-						fill="none"
-						stroke="currentColor"
-						viewBox="0 0 24 24"
-					>
-						<title>加载失败</title>
-						<path
-							strokeLinecap="round"
-							strokeLinejoin="round"
-							strokeWidth={2}
-							d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-						/>
-					</svg>
+					<UserIcon className="w-1/2 h-1/2 text-slate-400" title="加载失败" />
 				</div>
-			</div>
+			</Centered>
 		);
 	}
 
 	return (
-		<div className="flex justify-center">
+		<Centered>
 			<div className="relative inline-block">
 				{/* 加载骨架屏 */}
 				{loading && (
-					<div
-						className={`${sizeClass} ${shapeClass} bg-slate-200 animate-pulse`}
-						style={style}
+					<Skeleton
+						width={typeof size === "number" ? size : undefined}
+						height={typeof size === "number" ? size : undefined}
+						className={cn(sizeClass)}
+						rounded={shape === "circle" ? "full" : "md"}
 					/>
 				)}
 
@@ -84,9 +66,12 @@ export function AvatarRender({ value, config = {} }: AvatarRenderProps) {
 				<img
 					src={String(value)}
 					alt="avatar"
-					className={`${sizeClass} ${shapeClass} object-cover border-2 border-white shadow-md transition-all duration-200 hover:scale-105 hover:shadow-lg ${
+					className={cn(
+						sizeClass,
+						shapeClass,
+						"object-cover border-2 border-white shadow-md transition-all duration-200 hover:scale-105 hover:shadow-lg",
 						loading ? "opacity-0 absolute" : "opacity-100"
-					}`}
+					)}
 					style={style}
 					onLoad={() => setLoading(false)}
 					onError={() => {
@@ -95,6 +80,6 @@ export function AvatarRender({ value, config = {} }: AvatarRenderProps) {
 					}}
 				/>
 			</div>
-		</div>
+		</Centered>
 	);
 }

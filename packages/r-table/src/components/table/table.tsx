@@ -10,9 +10,35 @@ import {
 	type VisibilityState,
 } from "@tanstack/react-table";
 import React from "react";
+import {
+	COLUMN_BORDER,
+	cn,
+	DENSITY_HEADER_PADDING,
+	DENSITY_PADDING,
+	FIXED_COLUMN_BORDER_LEFT,
+	FIXED_COLUMN_BORDER_RIGHT,
+	FOCUS_RING,
+	getAlignClass,
+	getRowBgClasses,
+	PAGINATION_BUTTON,
+	ROW_BG_COLORS,
+	TABLE_CONTAINER,
+	TRANSITION_BASE,
+} from "../../styles/constants";
 import { getDefaultAlign } from "../../types/valueType";
 import type { ProColumnDef } from "../../utils/valueType";
 import { processValueTypeColumns } from "../../utils/valueType";
+import {
+	CheckIcon,
+	DocumentIcon,
+	FirstPageIcon,
+	LastPageIcon,
+	NextPageIcon,
+	PrevPageIcon,
+	SortAscIcon,
+	SortDescIcon,
+	SortIcon,
+} from "../ui/icons";
 import { Checkbox } from "./checkbox";
 import { useTableConfig } from "./table-context";
 import { TableSkeleton } from "./table-skeleton";
@@ -115,27 +141,70 @@ export interface DataTableProps<TData> {
 	};
 }
 
+// ========== 子组件 ==========
+
+// 排序图标组件
+interface SortIndicatorProps {
+	isSorted: false | "asc" | "desc";
+	canSort: boolean;
+}
+
+function SortIndicator({ isSorted, canSort }: SortIndicatorProps) {
+	if (!canSort) return null;
+
+	const baseClass = "transition-all duration-200 motion-reduce:transition-none";
+	const activeClass = isSorted
+		? "text-blue-600"
+		: "text-gray-400 group-hover:text-gray-600";
+
+	return (
+		<span className={cn(baseClass, activeClass)}>
+			{isSorted === "asc" && <SortAscIcon />}
+			{isSorted === "desc" && <SortDescIcon />}
+			{!isSorted && <SortIcon />}
+		</span>
+	);
+}
+
+// 分页按钮组件
+interface PaginationButtonProps
+	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+	icon: React.ReactNode;
+	label: string;
+}
+
+function PaginationButton({ icon, label, ...props }: PaginationButtonProps) {
+	return (
+		<button
+			type="button"
+			className={PAGINATION_BUTTON}
+			title={label}
+			aria-label={label}
+			{...props}
+		>
+			{icon}
+		</button>
+	);
+}
+
+// 空状态组件
+function EmptyTableState() {
+	return (
+		<div className="flex flex-col items-center justify-center">
+			<div className="w-20 h-20 bg-linear-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mb-4 shadow-sm ring-1 ring-gray-200">
+				<DocumentIcon className="w-10 h-10 text-gray-400" />
+			</div>
+			<h3 className="text-base font-semibold text-gray-900 mb-2">暂无数据</h3>
+			<p className="text-sm text-gray-500 max-w-sm">
+				当前表格中没有可显示的数据,请稍后再试或调整筛选条件
+			</p>
+		</div>
+	);
+}
+
 /**
  * 通用的数据表格组件
  * 基于 @tanstack/react-table 封装,提供完整的表格功能
- *
- * @example
- * ```tsx
- * const tableRef = useRef<DataTableRef<Person>>(null);
- *
- * <DataTable
- *   ref={tableRef}
- *   data={data}
- *   columns={columns}
- *   rowKey="id"
- *   storageKey="my-table"
- *   onRefresh={() => fetchData()}
- * />
- *
- * // 调用方法
- * tableRef.current?.refresh();
- * tableRef.current?.resetSelection();
- * ```
  */
 function DataTableInner<TData>(
 	{
@@ -157,7 +226,7 @@ function DataTableInner<TData>(
 		showToolBar,
 		onRefresh,
 		enableStripedRows = false,
-		stripedRowColors = { even: "bg-gray-50", odd: "bg-white" },
+		stripedRowColors = { even: ROW_BG_COLORS.even, odd: ROW_BG_COLORS.odd },
 	}: DataTableProps<TData>,
 	ref: React.Ref<DataTableRef<TData>>,
 ) {
@@ -193,23 +262,12 @@ function DataTableInner<TData>(
 	const data = isRequestMode ? requestData : externalData || [];
 	const loading = isRequestMode ? requestLoading : externalLoading;
 	const total = isRequestMode ? requestTotal : data.length;
-	// 密度状态（使用全局配置的默认密度）
+
+	// 密度状态
 	const [density, setDensity] = React.useState<DensityType>(
 		config.defaultUI.density || "default",
 	);
 
-	// 根据密度计算内边距
-	const densityPadding = {
-		compact: "px-4 py-2",
-		default: "px-6 py-4",
-		comfortable: "px-8 py-6",
-	};
-
-	const densityHeaderPadding = {
-		compact: "px-4 py-2",
-		default: "px-6 py-4",
-		comfortable: "px-8 py-5",
-	};
 	// 排序状态
 	const [sorting, setSorting] = React.useState<SortingState>([]);
 
@@ -254,13 +312,11 @@ function DataTableInner<TData>(
 
 		try {
 			setRequestLoading(true);
-
-			// 使用配置的分页 key 构建请求参数
 			const paginationKeys = config.paginationKeys;
 			const result = await request({
-				[paginationKeys.current || "current"]: pagination.pageIndex + 1, // 转换为从1开始
+				[paginationKeys.current || "current"]: pagination.pageIndex + 1,
 				[paginationKeys.size || "size"]: pagination.pageSize,
-				...params, // 传入额外参数
+				...params,
 			});
 
 			if (result.success === false) {
@@ -268,7 +324,6 @@ function DataTableInner<TData>(
 				setRequestData([]);
 				setRequestTotal(0);
 			} else {
-				// 使用配置的字段名提取数据
 				const resultData =
 					result[paginationKeys.data as keyof typeof result] || result.data;
 				const resultTotal =
@@ -302,15 +357,9 @@ function DataTableInner<TData>(
 	const table = useReactTable<TData>({
 		data,
 		columns: processedColumns,
-		state: {
-			sorting,
-			columnVisibility,
-			rowSelection,
-			pagination,
-		},
+		state: { sorting, columnVisibility, rowSelection, pagination },
 		enableRowSelection: finalEnableRowSelection,
 		enableSorting: finalEnableSorting,
-		// 使用 rowKey 作为行的唯一标识，确保后端分页时状态正确
 		getRowId: (row) => String(row[rowKey]),
 		onSortingChange: setSorting,
 		onColumnVisibilityChange: setColumnVisibility,
@@ -318,7 +367,6 @@ function DataTableInner<TData>(
 		onPaginationChange: setPagination,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: finalEnableSorting ? getSortedRowModel() : undefined,
-		// Request 模式使用手动分页，Data 模式使用前端分页
 		manualPagination: isRequestMode,
 		pageCount: isRequestMode
 			? Math.ceil(total / pagination.pageSize)
@@ -355,27 +403,15 @@ function DataTableInner<TData>(
 					fetchData();
 				}
 			},
-			resetSelection: () => {
-				setRowSelection({});
-			},
-			resetPagination: () => {
-				setPagination({ pageIndex: 0, pageSize: finalInitialPageSize });
-			},
-			getSelectedRows: () => {
-				return table.getSelectedRowModel().rows.map((row) => row.original);
-			},
-			getSelectedRowIds: () => {
-				return Object.keys(rowSelection);
-			},
-			setPageIndex: (pageIndex: number) => {
-				table.setPageIndex(pageIndex);
-			},
-			setPageSize: (pageSize: number) => {
-				table.setPageSize(pageSize);
-			},
-			getPaginationState: () => {
-				return pagination;
-			},
+			resetSelection: () => setRowSelection({}),
+			resetPagination: () =>
+				setPagination({ pageIndex: 0, pageSize: finalInitialPageSize }),
+			getSelectedRows: () =>
+				table.getSelectedRowModel().rows.map((row) => row.original),
+			getSelectedRowIds: () => Object.keys(rowSelection),
+			setPageIndex: (pageIndex: number) => table.setPageIndex(pageIndex),
+			setPageSize: (pageSize: number) => table.setPageSize(pageSize),
+			getPaginationState: () => pagination,
 		}),
 		[
 			isRequestMode,
@@ -394,10 +430,9 @@ function DataTableInner<TData>(
 			string,
 			{ left?: number; right?: number; isFixed: boolean }
 		>();
-		const checkboxWidth = 64; // w-16 = 4rem = 64px
-		const defaultColumnWidth = 120; // 默认列宽，与 minWidth 一致
+		const checkboxWidth = 64;
+		const defaultColumnWidth = 120;
 
-		// 计算左固定列的偏移量
 		let leftOffset = finalEnableRowSelection ? checkboxWidth : 0;
 		for (const col of processedColumns) {
 			const columnDef = col as ProColumnDef<TData>;
@@ -405,21 +440,14 @@ function DataTableInner<TData>(
 				| string
 				| undefined;
 
-			// 跳过不可见的列
-			if (columnId && columnVisibility[columnId] === false) {
-				continue;
-			}
+			if (columnId && columnVisibility[columnId] === false) continue;
 
 			if (columnDef.fixed === "left" && columnId) {
-				info.set(columnId, {
-					left: leftOffset,
-					isFixed: true,
-				});
+				info.set(columnId, { left: leftOffset, isFixed: true });
 				leftOffset += defaultColumnWidth;
 			}
 		}
 
-		// 计算右固定列的偏移量
 		let rightOffset = 0;
 		for (let i = processedColumns.length - 1; i >= 0; i--) {
 			const columnDef = processedColumns[i] as ProColumnDef<TData>;
@@ -427,16 +455,10 @@ function DataTableInner<TData>(
 				| string
 				| undefined;
 
-			// 跳过不可见的列
-			if (columnId && columnVisibility[columnId] === false) {
-				continue;
-			}
+			if (columnId && columnVisibility[columnId] === false) continue;
 
 			if (columnDef.fixed === "right" && columnId) {
-				info.set(columnId, {
-					right: rightOffset,
-					isFixed: true,
-				});
+				info.set(columnId, { right: rightOffset, isFixed: true });
 				rightOffset += defaultColumnWidth;
 			}
 		}
@@ -444,78 +466,59 @@ function DataTableInner<TData>(
 		return info;
 	}, [processedColumns, finalEnableRowSelection, columnVisibility]);
 
-	// 获取固定列的样式和类名
+	// 获取固定列的样式
 	const getFixedStyle = React.useCallback(
-		(columnId: string | undefined) => {
+		(columnId: string | undefined): React.CSSProperties => {
 			if (!columnId) return {};
-
 			const fixedInfo = fixedColumnsInfo.get(columnId);
 			if (!fixedInfo?.isFixed) return {};
 
-			const style: React.CSSProperties = {
-				position: "sticky",
-				zIndex: 20,
-			};
-
-			if (fixedInfo.left !== undefined) {
-				style.left = `${fixedInfo.left}px`;
-			}
-
-			if (fixedInfo.right !== undefined) {
-				style.right = `${fixedInfo.right}px`;
-			}
-
+			const style: React.CSSProperties = { position: "sticky", zIndex: 20 };
+			if (fixedInfo.left !== undefined) style.left = `${fixedInfo.left}px`;
+			if (fixedInfo.right !== undefined) style.right = `${fixedInfo.right}px`;
 			return style;
 		},
 		[fixedColumnsInfo],
 	);
 
-	// 获取列的边框类名（使用伪元素实现统一的边框样式）
+	// 获取列的边框类名
 	const getColumnBorderClass = React.useCallback(
-		(columnId: string | undefined, isLast: boolean) => {
+		(columnId: string | undefined, isLast: boolean): string => {
 			if (!columnId || isLast) return "";
 
 			const fixedInfo = fixedColumnsInfo.get(columnId);
-
-			// 固定列使用更深的边框和阴影来突出显示
 			if (fixedInfo?.isFixed) {
-				if (fixedInfo.left !== undefined) {
-					return "after:content-[''] after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-300 after:pointer-events-none after:shadow-[2px_0_4px_rgba(0,0,0,0.08)]";
-				}
-				if (fixedInfo.right !== undefined) {
-					return "before:content-[''] before:absolute before:top-0 before:left-0 before:bottom-0 before:w-[1px] before:bg-gray-300 before:pointer-events-none before:shadow-[-2px_0_4px_rgba(0,0,0,0.08)]";
-				}
+				if (fixedInfo.left !== undefined) return FIXED_COLUMN_BORDER_LEFT;
+				if (fixedInfo.right !== undefined) return FIXED_COLUMN_BORDER_RIGHT;
 			}
-
-			// 普通列使用标准边框
-			return "after:content-[''] after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-200 after:pointer-events-none";
+			return COLUMN_BORDER;
 		},
 		[fixedColumnsInfo],
 	);
 
-	// 获取行的背景色类名（支持隔行异色）
+	// 获取行的背景色类名
 	const getRowBackgroundClass = React.useCallback(
-		(rowIndex: number, isSelected: boolean) => {
-			// 选中状态优先级最高
-			if (isSelected) {
-				return "bg-blue-50 hover:bg-blue-100";
-			}
+		(rowIndex: number, isSelected: boolean): string => {
+			return getRowBgClasses(isSelected, enableStripedRows, rowIndex);
+		},
+		[enableStripedRows],
+	);
 
-			// 如果启用隔行异色
+	// 获取单元格背景色
+	const getCellBackground = React.useCallback(
+		(rowIndex: number, isSelected: boolean): string => {
+			if (isSelected) return ROW_BG_COLORS.selected;
 			if (enableStripedRows) {
-				const isEven = rowIndex % 2 === 0;
-				const bgColor = isEven ? stripedRowColors.even : stripedRowColors.odd;
-				// 为隔行异色添加hover效果
-				return `${bgColor} hover:bg-gray-100`;
+				return rowIndex % 2 === 0
+					? stripedRowColors.even || ""
+					: stripedRowColors.odd || "";
 			}
-
-			// 默认背景色
-			return "bg-white hover:bg-gray-50";
+			return ROW_BG_COLORS.default;
 		},
 		[enableStripedRows, stripedRowColors],
 	);
 
-	// 处理行点击 - 同时切换行选择状态
+	// 处理行点击
 	const handleRowClick = (rowId: string, original: TData) => {
 		if (finalEnableRowSelection) {
 			table.getRow(rowId).toggleSelected();
@@ -525,7 +528,7 @@ function DataTableInner<TData>(
 		}
 	};
 
-	// 处理键盘事件 - 支持 Enter 和 Space 键激活行
+	// 处理键盘事件
 	const handleRowKeyDown = (
 		e: React.KeyboardEvent,
 		rowId: string,
@@ -552,8 +555,8 @@ function DataTableInner<TData>(
 				/>
 			)}
 
-			{/* 表格容器 - 支持水平滚动 */}
-			<div className="relative overflow-hidden border border-gray-200 rounded-lg shadow-sm bg-white">
+			{/* 表格容器 */}
+			<div className={TABLE_CONTAINER}>
 				<div className="overflow-x-auto">
 					<table
 						className="min-w-full border-collapse table-fixed"
@@ -561,11 +564,18 @@ function DataTableInner<TData>(
 					>
 						<thead className="bg-linear-to-b from-gray-100 to-gray-50">
 							{table.getHeaderGroups().map((headerGroup) => (
-								<tr key={headerGroup.id} className="border-b border-gray-300 ">
+								<tr key={headerGroup.id} className="border-b border-gray-300">
 									{/* 行选择列 */}
 									{finalEnableRowSelection && (
 										<th
-											className={`${densityHeaderPadding[density]} w-16 text-center sticky left-0 bg-linear-to-b from-gray-100 to-gray-50 bg-white z-10 relative after:content-[''] after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-300 after:pointer-events-none`}
+											className={cn(
+												DENSITY_HEADER_PADDING[density],
+												"w-16 text-center sticky left-0 bg-linear-to-b from-gray-100 to-gray-50 bg-white z-10",
+												FIXED_COLUMN_BORDER_LEFT.replace(
+													"after:bg-gray-300",
+													"after:bg-gray-300",
+												),
+											)}
 										>
 											<Checkbox
 												checked={table.getIsAllPageRowsSelected()}
@@ -582,31 +592,29 @@ function DataTableInner<TData>(
 									)}
 
 									{headerGroup.headers.map((header, headerIndex) => {
-										// 获取列定义并计算对齐方式
 										const columnDef = header.column
 											.columnDef as ProColumnDef<TData>;
 										const align =
 											columnDef.align || getDefaultAlign(columnDef.valueType);
-										const alignClass =
-											align === "left"
-												? "text-left"
-												: align === "center"
-													? "text-center"
-													: "text-right";
-
-										// 获取固定列样式和边框类名
 										const columnId = (columnDef.id ||
 											(columnDef as any).accessorKey) as string;
 										const fixedStyle = getFixedStyle(columnId);
 										const isLast =
 											headerIndex === headerGroup.headers.length - 1;
 										const borderClass = getColumnBorderClass(columnId, isLast);
+										const canSort =
+											finalEnableSorting && header.column.getCanSort();
 
 										return (
 											<th
 												key={header.id}
 												colSpan={header.colSpan}
-												className={`${densityHeaderPadding[density]} ${alignClass} text-xs font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-200 bg-gray-50 relative ${borderClass}`}
+												className={cn(
+													DENSITY_HEADER_PADDING[density],
+													getAlignClass(align),
+													"text-xs font-semibold text-gray-800 uppercase tracking-wide border-b border-gray-200 bg-gray-50 relative",
+													borderClass,
+												)}
 												style={{
 													minWidth: "120px",
 													backgroundColor: "#f9fafb",
@@ -614,89 +622,28 @@ function DataTableInner<TData>(
 												}}
 											>
 												<div className="flex items-center gap-2">
-													{/* 列标题 */}
 													<div className="flex items-center justify-center flex-1">
 														{header.isPlaceholder ? null : (
 															<button
 																type="button"
-																onClick={() => {
-																	if (
-																		finalEnableSorting &&
-																		header.column.getCanSort()
-																	) {
-																		header.column.toggleSorting();
-																	}
-																}}
-																className={`flex items-center gap-2 transition-colors duration-150 motion-reduce:transition-none ${
-																	finalEnableSorting &&
-																	header.column.getCanSort()
-																		? "hover:text-gray-900 cursor-pointer group"
-																		: ""
-																}`}
+																onClick={() =>
+																	canSort && header.column.toggleSorting()
+																}
+																className={cn(
+																	"flex items-center gap-2",
+																	TRANSITION_BASE,
+																	canSort &&
+																		"hover:text-gray-900 cursor-pointer group",
+																)}
 															>
 																{flexRender(
 																	header.column.columnDef.header,
 																	header.getContext(),
 																)}
-																{/* 排序图标 */}
-																{finalEnableSorting &&
-																	header.column.getCanSort() && (
-																		<span
-																			className={`transition-all duration-200 motion-reduce:transition-none ${
-																				header.column.getIsSorted()
-																					? "text-blue-600"
-																					: "text-gray-400 group-hover:text-gray-600"
-																			}`}
-																		>
-																			{header.column.getIsSorted() === "asc" ? (
-																				<svg
-																					className="w-4 h-4"
-																					fill="none"
-																					stroke="currentColor"
-																					viewBox="0 0 24 24"
-																				>
-																					<title>升序排序</title>
-																					<path
-																						strokeLinecap="round"
-																						strokeLinejoin="round"
-																						strokeWidth={2}
-																						d="M5 15l7-7 7 7"
-																					/>
-																				</svg>
-																			) : header.column.getIsSorted() ===
-																				"desc" ? (
-																				<svg
-																					className="w-4 h-4"
-																					fill="none"
-																					stroke="currentColor"
-																					viewBox="0 0 24 24"
-																				>
-																					<title>降序排序</title>
-																					<path
-																						strokeLinecap="round"
-																						strokeLinejoin="round"
-																						strokeWidth={2}
-																						d="M19 9l-7 7-7-7"
-																					/>
-																				</svg>
-																			) : (
-																				<svg
-																					className="w-4 h-4"
-																					fill="none"
-																					stroke="currentColor"
-																					viewBox="0 0 24 24"
-																				>
-																					<title>可排序</title>
-																					<path
-																						strokeLinecap="round"
-																						strokeLinejoin="round"
-																						strokeWidth={2}
-																						d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-																					/>
-																				</svg>
-																			)}
-																		</span>
-																	)}
+																<SortIndicator
+																	isSorted={header.column.getIsSorted()}
+																	canSort={canSort || false}
+																/>
 															</button>
 														)}
 													</div>
@@ -709,7 +656,6 @@ function DataTableInner<TData>(
 						</thead>
 						<tbody>
 							{loading ? (
-								// Loading 骨架屏
 								<TableSkeleton<TData>
 									rowKey={rowKey}
 									rows={pagination.pageSize}
@@ -718,147 +664,106 @@ function DataTableInner<TData>(
 									density={density}
 								/>
 							) : data.length === 0 ? (
-								// 空数据状态
 								<tr>
 									<td
 										colSpan={columns.length + (finalEnableRowSelection ? 1 : 0)}
 										className="px-10 py-20 text-center"
 									>
-										{emptyState || (
-											<div className="flex flex-col items-center justify-center">
-												<div className="w-20 h-20 bg-linear-to-br from-gray-100 to-gray-50 rounded-2xl flex items-center justify-center mb-4 shadow-sm ring-1 ring-gray-200">
-													<svg
-														className="w-10 h-10 text-gray-400"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-														aria-hidden="true"
-													>
-														<path
-															strokeLinecap="round"
-															strokeLinejoin="round"
-															strokeWidth={1.5}
-															d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-														/>
-													</svg>
-												</div>
-												<h3 className="text-base font-semibold text-gray-900 mb-2">
-													暂无数据
-												</h3>
-												<p className="text-sm text-gray-500 max-w-sm">
-													当前表格中没有可显示的数据,请稍后再试或调整筛选条件
-												</p>
-											</div>
-										)}
+										{emptyState || <EmptyTableState />}
 									</td>
 								</tr>
 							) : (
-								// 数据行
-								table
-									.getRowModel()
-									.rows.map((row) => (
-										<tr
-											key={row.id}
-											onClick={() => handleRowClick(row.id, row.original)}
-											onKeyDown={(e) =>
-												handleRowKeyDown(e, row.id, row.original)
-											}
-											tabIndex={
-												finalEnableRowSelection || onRowClick ? 0 : undefined
-											}
-											role={
-												finalEnableRowSelection || onRowClick
-													? "button"
-													: undefined
-											}
-											aria-selected={
-												finalEnableRowSelection
-													? row.getIsSelected()
-													: undefined
-											}
-											className={`
-										border-b border-gray-100 last:border-b-0
-										transition-all duration-200 motion-reduce:transition-none
-										focus:outline-none
-										${getRowBackgroundClass(row.index, finalEnableRowSelection && row.getIsSelected())}
-										${finalEnableRowSelection || onRowClick ? "cursor-pointer" : ""}
-									`}
-										>
-											{/* 行选择 Checkbox */}
-											{finalEnableRowSelection && (
+								table.getRowModel().rows.map((row) => (
+									<tr
+										key={row.id}
+										onClick={() => handleRowClick(row.id, row.original)}
+										onKeyDown={(e) => handleRowKeyDown(e, row.id, row.original)}
+										tabIndex={
+											finalEnableRowSelection || onRowClick ? 0 : undefined
+										}
+										role={
+											finalEnableRowSelection || onRowClick
+												? "button"
+												: undefined
+										}
+										aria-selected={
+											finalEnableRowSelection ? row.getIsSelected() : undefined
+										}
+										className={cn(
+											"border-b border-gray-100 last:border-b-0",
+											TRANSITION_BASE,
+											"focus:outline-none",
+											getRowBackgroundClass(
+												row.index,
+												finalEnableRowSelection && row.getIsSelected(),
+											),
+											(finalEnableRowSelection || onRowClick) &&
+												"cursor-pointer",
+										)}
+									>
+										{/* 行选择 Checkbox */}
+										{finalEnableRowSelection && (
+											<td
+												className={cn(
+													DENSITY_PADDING[density],
+													"w-16 text-center sticky left-0 z-10",
+													FIXED_COLUMN_BORDER_LEFT.replace(
+														"after:bg-gray-300",
+														"after:bg-gray-300",
+													),
+													getCellBackground(row.index, row.getIsSelected()),
+												)}
+											>
+												<Checkbox
+													checked={row.getIsSelected()}
+													onChange={(checked) => row.toggleSelected(checked)}
+													ariaLabel={`选择第 ${row.index + 1} 行`}
+												/>
+											</td>
+										)}
+
+										{/* 数据单元格 */}
+										{row.getVisibleCells().map((cell, cellIndex) => {
+											const columnDef = cell.column
+												.columnDef as ProColumnDef<TData>;
+											const align =
+												columnDef.align || getDefaultAlign(columnDef.valueType);
+											const columnId = (columnDef.id ||
+												(columnDef as any).accessorKey) as string;
+											const fixedStyle = getFixedStyle(columnId);
+											const isLast =
+												cellIndex === row.getVisibleCells().length - 1;
+											const borderClass = getColumnBorderClass(
+												columnId,
+												isLast,
+											);
+
+											return (
 												<td
-													className={`${densityPadding[density]} w-16 text-center sticky left-0 z-10 relative after:content-[''] after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-300 after:pointer-events-none ${
-														row.getIsSelected()
-															? "bg-blue-50"
-															: enableStripedRows
-																? row.index % 2 === 0
-																	? stripedRowColors.even
-																	: stripedRowColors.odd
-																: "bg-white"
-													}`}
+													key={cell.id}
+													className={cn(
+														DENSITY_PADDING[density],
+														getAlignClass(align),
+														"text-sm text-gray-900 relative",
+														getCellBackground(row.index, row.getIsSelected()),
+														borderClass,
+													)}
+													style={{
+														...fixedStyle,
+														minWidth: "120px",
+														paddingLeft: "8px",
+														paddingRight: "8px",
+													}}
 												>
-													<Checkbox
-														checked={row.getIsSelected()}
-														onChange={(checked) => row.toggleSelected(checked)}
-														ariaLabel={`选择第 ${row.index + 1} 行`}
-													/>
+													{flexRender(
+														cell.column.columnDef.cell,
+														cell.getContext(),
+													)}
 												</td>
-											)}
-
-											{/* 数据单元格 */}
-											{row.getVisibleCells().map((cell, cellIndex) => {
-												// 获取列定义并计算对齐方式
-												const columnDef = cell.column
-													.columnDef as ProColumnDef<TData>;
-												const align =
-													columnDef.align ||
-													getDefaultAlign(columnDef.valueType);
-												const alignClass =
-													align === "left"
-														? "text-left"
-														: align === "center"
-															? "text-center"
-															: "text-right";
-
-												// 获取固定列样式和边框类名
-												const columnId = (columnDef.id ||
-													(columnDef as any).accessorKey) as string;
-												const fixedStyle = getFixedStyle(columnId);
-												const isLast =
-													cellIndex === row.getVisibleCells().length - 1;
-												const borderClass = getColumnBorderClass(
-													columnId,
-													isLast,
-												);
-
-												return (
-													<td
-														key={cell.id}
-														className={`${densityPadding[density]} ${alignClass} text-sm text-gray-900 ${
-															row.getIsSelected()
-																? "bg-blue-50"
-																: enableStripedRows
-																	? row.index % 2 === 0
-																		? stripedRowColors.even
-																		: stripedRowColors.odd
-																	: "bg-white"
-														} relative ${borderClass}`}
-														style={{
-															...fixedStyle,
-															minWidth: "120px",
-															paddingLeft: "8px",
-															paddingRight: "8px",
-														}}
-													>
-														{flexRender(
-															cell.column.columnDef.cell,
-															cell.getContext(),
-														)}
-													</td>
-												);
-											})}
-										</tr>
-									))
+											);
+										})}
+									</tr>
+								))
 							)}
 						</tbody>
 					</table>
@@ -876,18 +781,7 @@ function DataTableInner<TData>(
 						</span>
 						{Object.keys(rowSelection).length > 0 && (
 							<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md font-medium">
-								<svg
-									className="w-4 h-4"
-									fill="currentColor"
-									viewBox="0 0 20 20"
-									aria-hidden="true"
-								>
-									<path
-										fillRule="evenodd"
-										d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-										clipRule="evenodd"
-									/>
-								</svg>
+								<CheckIcon className="w-4 h-4" aria-hidden="true" />
 								已选 {Object.keys(rowSelection).length} 条
 							</span>
 						)}
@@ -897,51 +791,18 @@ function DataTableInner<TData>(
 					<div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
 						{/* 分页按钮组 */}
 						<div className="flex items-center gap-1 order-1">
-							<button
-								type="button"
+							<PaginationButton
+								icon={<FirstPageIcon />}
+								label="第一页"
 								onClick={() => table.setPageIndex(0)}
 								disabled={!table.getCanPreviousPage()}
-								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 "
-								title="首页"
-								aria-label="第一页"
-							>
-								<svg
-									className="w-4 h-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
-									/>
-								</svg>
-							</button>
-
-							<button
-								type="button"
+							/>
+							<PaginationButton
+								icon={<PrevPageIcon />}
+								label="上一页"
 								onClick={() => table.previousPage()}
 								disabled={!table.getCanPreviousPage()}
-								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2"
-								title="上一页"
-								aria-label="上一页"
-							>
-								<svg
-									className="w-4 h-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M15 19l-7-7 7-7"
-									/>
-								</svg>
-							</button>
+							/>
 
 							{/* 页码显示 */}
 							<span className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-md min-w-25 text-center">
@@ -949,51 +810,18 @@ function DataTableInner<TData>(
 								{table.getPageCount()}
 							</span>
 
-							<button
-								type="button"
+							<PaginationButton
+								icon={<NextPageIcon />}
+								label="下一页"
 								onClick={() => table.nextPage()}
 								disabled={!table.getCanNextPage()}
-								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2 "
-								title="下一页"
-								aria-label="下一页"
-							>
-								<svg
-									className="w-4 h-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M9 5l7 7-7 7"
-									/>
-								</svg>
-							</button>
-
-							<button
-								type="button"
+							/>
+							<PaginationButton
+								icon={<LastPageIcon />}
+								label="最后一页"
 								onClick={() => table.setPageIndex(table.getPageCount() - 1)}
 								disabled={!table.getCanNextPage()}
-								className="px-2.5 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 transition-all duration-150 motion-reduce:transition-none focus:outline-none focus:ring-2"
-								title="末页"
-								aria-label="最后一页"
-							>
-								<svg
-									className="w-4 h-4"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M13 5l7 7-7 7M5 5l7 7-7 7"
-									/>
-								</svg>
-							</button>
+							/>
 						</div>
 
 						{/* 跳转页码 */}
@@ -1008,7 +836,12 @@ function DataTableInner<TData>(
 									const page = e.target.value ? Number(e.target.value) - 1 : 0;
 									table.setPageIndex(page);
 								}}
-								className="w-16 px-2 py-1.5 text-sm text-center border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent transition-all duration-150 motion-reduce:transition-none"
+								className={cn(
+									"w-16 px-2 py-1.5 text-sm text-center border border-gray-300 rounded-md",
+									TRANSITION_BASE,
+									FOCUS_RING,
+									"focus:border-transparent",
+								)}
 								aria-label="跳转到指定页码"
 							/>
 							<span className="text-gray-600 hidden sm:inline">页</span>
@@ -1017,10 +850,13 @@ function DataTableInner<TData>(
 						{/* 每页条数 */}
 						<select
 							value={table.getState().pagination.pageSize}
-							onChange={(e) => {
-								table.setPageSize(Number(e.target.value));
-							}}
-							className="px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:border-transparent bg-white hover:bg-gray-50 transition-all duration-150 motion-reduce:transition-none cursor-pointer order-3 lg:order-2"
+							onChange={(e) => table.setPageSize(Number(e.target.value))}
+							className={cn(
+								"px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 cursor-pointer order-3 lg:order-2",
+								TRANSITION_BASE,
+								FOCUS_RING,
+								"focus:border-transparent",
+							)}
 							aria-label="选择每页显示条数"
 						>
 							{finalPageSizeOptions.map((pageSize) => (
@@ -1037,7 +873,6 @@ function DataTableInner<TData>(
 }
 
 // 导出带有泛型支持的组件
-// 使用双重断言来绕过 TypeScript 的类型检查限制
 export const DataTable = React.forwardRef(DataTableInner) as unknown as <TData>(
 	props: DataTableProps<TData> & { ref?: React.Ref<DataTableRef<TData>> },
 ) => React.ReactElement;
