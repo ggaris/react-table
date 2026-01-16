@@ -261,6 +261,8 @@ export function ValueTypeExample() {
 				enablePagination
 				initialPageSize={10}
 				showToolBar
+				enableStripedRows
+				stripedRowColors={{ even: "bg-gray-50", odd: "bg-white" }}
 				onSelectionChange={(selectedRows) => {
 					console.log("选中的产品:", selectedRows);
 				}}

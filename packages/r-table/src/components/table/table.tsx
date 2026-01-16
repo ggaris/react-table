@@ -104,6 +104,15 @@ export interface DataTableProps<TData> {
 	showToolBar?: boolean;
 	/** 刷新回调。如果提供，将自动在工具栏显示刷新按钮（data 模式使用） */
 	onRefresh?: () => void;
+	/** 是否启用隔行异色 */
+	enableStripedRows?: boolean;
+	/** 隔行异色的背景色配置 */
+	stripedRowColors?: {
+		/** 偶数行背景色 */
+		even?: string;
+		/** 奇数行背景色 */
+		odd?: string;
+	};
 }
 
 /**
@@ -147,6 +156,8 @@ function DataTableInner<TData>(
 		pageSizeOptions,
 		showToolBar,
 		onRefresh,
+		enableStripedRows = false,
+		stripedRowColors = { even: "bg-gray-50", odd: "bg-white" },
 	}: DataTableProps<TData>,
 	ref: React.Ref<DataTableRef<TData>>,
 ) {
@@ -155,7 +166,7 @@ function DataTableInner<TData>(
 
 	// 使用配置的默认值（优先使用 props，其次使用全局配置）
 	const finalEnableRowSelection =
-		enableRowSelection ?? config.defaultFeatures.enableRowSelection;
+		enableRowSelection ?? config.defaultFeatures.enableRowSelection ?? false;
 	const finalEnableSorting =
 		enableSorting ?? config.defaultFeatures.enableSorting;
 	const finalEnablePagination =
@@ -482,6 +493,28 @@ function DataTableInner<TData>(
 		[fixedColumnsInfo],
 	);
 
+	// 获取行的背景色类名（支持隔行异色）
+	const getRowBackgroundClass = React.useCallback(
+		(rowIndex: number, isSelected: boolean) => {
+			// 选中状态优先级最高
+			if (isSelected) {
+				return "bg-blue-50 hover:bg-blue-100";
+			}
+
+			// 如果启用隔行异色
+			if (enableStripedRows) {
+				const isEven = rowIndex % 2 === 0;
+				const bgColor = isEven ? stripedRowColors.even : stripedRowColors.odd;
+				// 为隔行异色添加hover效果
+				return `${bgColor} hover:bg-gray-100`;
+			}
+
+			// 默认背景色
+			return "bg-white hover:bg-gray-50";
+		},
+		[enableStripedRows, stripedRowColors],
+	);
+
 	// 处理行点击 - 同时切换行选择状态
 	const handleRowClick = (rowId: string, original: TData) => {
 		if (finalEnableRowSelection) {
@@ -747,11 +780,7 @@ function DataTableInner<TData>(
 										border-b border-gray-100 last:border-b-0
 										transition-all duration-200 motion-reduce:transition-none
 										focus:outline-none
-										${
-											finalEnableRowSelection && row.getIsSelected()
-												? "bg-blue-50 hover:bg-blue-100"
-												: "bg-white hover:bg-gray-50"
-										}
+										${getRowBackgroundClass(row.index, finalEnableRowSelection && row.getIsSelected())}
 										${finalEnableRowSelection || onRowClick ? "cursor-pointer" : ""}
 									`}
 										>
@@ -759,7 +788,13 @@ function DataTableInner<TData>(
 											{finalEnableRowSelection && (
 												<td
 													className={`${densityPadding[density]} w-16 text-center sticky left-0 z-10 relative after:content-[''] after:absolute after:top-0 after:right-0 after:bottom-0 after:w-[1px] after:bg-gray-300 after:pointer-events-none ${
-														row.getIsSelected() ? "bg-blue-50" : "bg-white"
+														row.getIsSelected()
+															? "bg-blue-50"
+															: enableStripedRows
+																? row.index % 2 === 0
+																	? stripedRowColors.even
+																	: stripedRowColors.odd
+																: "bg-white"
 													}`}
 												>
 													<Checkbox
@@ -800,7 +835,13 @@ function DataTableInner<TData>(
 													<td
 														key={cell.id}
 														className={`${densityPadding[density]} ${alignClass} text-sm text-gray-900 ${
-															row.getIsSelected() ? "bg-blue-50" : "bg-white"
+															row.getIsSelected()
+																? "bg-blue-50"
+																: enableStripedRows
+																	? row.index % 2 === 0
+																		? stripedRowColors.even
+																		: stripedRowColors.odd
+																	: "bg-white"
 														} relative ${borderClass}`}
 														style={{
 															...fixedStyle,
