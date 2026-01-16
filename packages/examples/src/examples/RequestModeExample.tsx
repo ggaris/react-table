@@ -135,8 +135,10 @@ export function RequestModeExample() {
 		}
 
 		// 分页
-		const start = (params.current - 1) * params.size;
-		const end = start + params.size;
+		const current = params.current ?? 1;
+		const size = params.size ?? 10;
+		const start = (current - 1) * size;
+		const end = start + size;
 		const pageData = filteredData.slice(start, end);
 		console.log(filteredData, "filteredData");
 

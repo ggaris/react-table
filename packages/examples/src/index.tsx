@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import "./index.css";
 import { TableProvider } from "r-table";
 import { Navigation } from "./components/Navigation";
+import { DefaultExample } from "./examples/DefaultExample";
 import { RefApiExample } from "./examples/RefApiExample";
 import { RequestModeExample } from "./examples/RequestModeExample";
 import { ServerPaginationExample } from "./examples/ServerPaginationExample";
@@ -16,6 +17,8 @@ function App() {
 	const renderContent = () => {
 		switch (currentRoute) {
 			case "/":
+				return <DefaultExample />;
+			case "/ref-api":
 				return <RefApiExample />;
 			case "/server-pagination":
 				return <ServerPaginationExample />;

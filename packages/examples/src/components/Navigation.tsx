@@ -33,7 +33,8 @@ interface NavigationProps {
  */
 export function Navigation({ currentRoute }: NavigationProps) {
 	const routes = [
-		{ path: "/", label: "Ref API", icon: "🎯" },
+		{ path: "/", label: "默认示例", icon: "✨" },
+		{ path: "/ref-api", label: "Ref API", icon: "🎯" },
 		{ path: "/server-pagination", label: "后端分页", icon: "📡" },
 		{ path: "/request-mode", label: "Request 模式", icon: "🌐" },
 		{ path: "/valuetype", label: "ValueType", icon: "🎨" },

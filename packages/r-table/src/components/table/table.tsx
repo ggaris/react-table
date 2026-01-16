@@ -662,6 +662,7 @@ function DataTableInner<TData>(
 									columns={columns.length}
 									hasSelection={finalEnableRowSelection}
 									density={density}
+									columnDefs={columns}
 								/>
 							) : data.length === 0 ? (
 								<tr>
@@ -771,7 +772,7 @@ function DataTableInner<TData>(
 			</div>
 
 			{/* 分页控件 */}
-			{finalEnablePagination && !loading && data.length > 0 && (
+			{finalEnablePagination && (data.length > 0 || loading) && (
 				<div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm">
 					{/* 信息显示 */}
 					<div className="flex flex-wrap items-center gap-3 text-sm">
@@ -795,13 +796,13 @@ function DataTableInner<TData>(
 								icon={<FirstPageIcon />}
 								label="第一页"
 								onClick={() => table.setPageIndex(0)}
-								disabled={!table.getCanPreviousPage()}
+								disabled={loading || !table.getCanPreviousPage()}
 							/>
 							<PaginationButton
 								icon={<PrevPageIcon />}
 								label="上一页"
 								onClick={() => table.previousPage()}
-								disabled={!table.getCanPreviousPage()}
+								disabled={loading || !table.getCanPreviousPage()}
 							/>
 
 							{/* 页码显示 */}
@@ -814,13 +815,13 @@ function DataTableInner<TData>(
 								icon={<NextPageIcon />}
 								label="下一页"
 								onClick={() => table.nextPage()}
-								disabled={!table.getCanNextPage()}
+								disabled={loading || !table.getCanNextPage()}
 							/>
 							<PaginationButton
 								icon={<LastPageIcon />}
 								label="最后一页"
 								onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-								disabled={!table.getCanNextPage()}
+								disabled={loading || !table.getCanNextPage()}
 							/>
 						</div>
 
@@ -832,6 +833,7 @@ function DataTableInner<TData>(
 								min="1"
 								max={table.getPageCount()}
 								defaultValue={table.getState().pagination.pageIndex + 1}
+								disabled={loading}
 								onChange={(e) => {
 									const page = e.target.value ? Number(e.target.value) - 1 : 0;
 									table.setPageIndex(page);
@@ -841,6 +843,7 @@ function DataTableInner<TData>(
 									TRANSITION_BASE,
 									FOCUS_RING,
 									"focus:border-transparent",
+									"disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed",
 								)}
 								aria-label="跳转到指定页码"
 							/>
@@ -851,11 +854,13 @@ function DataTableInner<TData>(
 						<select
 							value={table.getState().pagination.pageSize}
 							onChange={(e) => table.setPageSize(Number(e.target.value))}
+							disabled={loading}
 							className={cn(
 								"px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 cursor-pointer order-3 lg:order-2",
 								TRANSITION_BASE,
 								FOCUS_RING,
 								"focus:border-transparent",
+								"disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60",
 							)}
 							aria-label="选择每页显示条数"
 						>
