@@ -41,6 +41,18 @@ export interface MoneyConfig {
 }
 
 /**
+ * 百分比颜色阈值配置
+ */
+export interface PercentColorThreshold {
+	/** 阈值，0-100 */
+	threshold: number;
+	/** 文本颜色类名 */
+	textColor: string;
+	/** 背景色类名 */
+	bgColor: string;
+}
+
+/**
  * 百分比配置
  */
 export interface PercentConfig {
@@ -50,6 +62,10 @@ export interface PercentConfig {
 	showSymbol?: boolean;
 	/** 是否显示进度条，默认 false */
 	showProgressBar?: boolean;
+	/** 是否反转颜色（值越小颜色越好），默认 false */
+	reverseColor?: boolean;
+	/** 自定义颜色阈值配置，优先级高于 reverseColor */
+	colorThresholds?: PercentColorThreshold[];
 }
 
 /**
@@ -91,6 +107,18 @@ export interface SelectConfig {
 }
 
 /**
+ * 进度条渐变色阈值配置
+ */
+export interface ProgressGradientThreshold {
+	/** 阈值，0-100 */
+	threshold: number;
+	/** 渐变色类名（如 "from-blue-500 to-blue-400"） */
+	gradient: string;
+	/** 文本颜色类名 */
+	textColor: string;
+}
+
+/**
  * 进度条配置
  */
 export interface ProgressConfig {
@@ -98,6 +126,10 @@ export interface ProgressConfig {
 	color?: string;
 	/** 是否显示文本 */
 	showInfo?: boolean;
+	/** 是否反转颜色（值越小颜色越好），默认 false */
+	reverseColor?: boolean;
+	/** 自定义渐变色阈值配置，优先级高于 reverseColor */
+	gradientThresholds?: ProgressGradientThreshold[];
 }
 
 /**

@@ -4,6 +4,7 @@
  */
 
 import type { DateConfig } from "../../types/valueType";
+import { VALUE_TYPE_CONTAINER } from "../../styles/constants";
 import { EmptyState, ErrorBadge } from "../ui";
 import { CalendarIcon } from "../ui/icons";
 
@@ -33,7 +34,7 @@ export function DateRender({ value, config = {} }: DateRenderProps) {
 			.replace("DD", String(date.getDate()).padStart(2, "0"));
 
 		return (
-			<span className="flex justify-center items-center gap-2 px-2 py-1 bg-slate-50 text-slate-700 text-sm rounded-md border border-slate-200 transition-colors duration-200 hover:bg-slate-100">
+			<span className={`${VALUE_TYPE_CONTAINER} justify-center bg-slate-50 text-slate-700 text-sm border-slate-200 hover:bg-slate-100`}>
 				<CalendarIcon className="w-3.5 h-3.5 text-slate-500" />
 				<span className="font-mono text-xs tabular-nums">{formatted}</span>
 			</span>

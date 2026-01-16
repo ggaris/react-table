@@ -13,7 +13,7 @@ interface ProgressRenderProps {
 }
 
 export function ProgressRender({ value, config = {} }: ProgressRenderProps) {
-	const { showInfo = true } = config;
+	const { showInfo = true, reverseColor = false, gradientThresholds } = config;
 
 	// 处理空值
 	if (value === null || value === undefined) {
@@ -27,7 +27,35 @@ export function ProgressRender({ value, config = {} }: ProgressRenderProps) {
 	}
 
 	const progress = Math.max(0, Math.min(100, num));
-	const { gradient, text: textColor } = getProgressGradient(progress);
+
+	// 获取颜色配置
+	let gradient: string;
+	let textColor: string;
+
+	if (gradientThresholds && gradientThresholds.length > 0) {
+		// 使用自定义渐变色阈值
+		const sorted = [...gradientThresholds].sort((a, b) => b.threshold - a.threshold);
+		const match = sorted.find(t => progress >= t.threshold);
+		if (match) {
+			gradient = match.gradient;
+			textColor = match.textColor;
+		} else if (sorted.length > 0) {
+			// 如果没有匹配，使用最后一个（最低阈值）
+			const last = sorted[sorted.length - 1]!;
+			gradient = last.gradient;
+			textColor = last.textColor;
+		} else {
+			// 降级到默认颜色
+			const colors = getProgressGradient(progress, reverseColor);
+			gradient = colors.gradient;
+			textColor = colors.text;
+		}
+	} else {
+		// 使用默认颜色或反转颜色
+		const colors = getProgressGradient(progress, reverseColor);
+		gradient = colors.gradient;
+		textColor = colors.text;
+	}
 
 	return (
 		<Centered className="w-full">

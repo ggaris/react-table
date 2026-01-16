@@ -4,6 +4,7 @@
  */
 
 import type { DateTimeConfig } from "../../types/valueType";
+import { VALUE_TYPE_CONTAINER } from "../../styles/constants";
 import { EmptyState, ErrorBadge, Centered } from "../ui";
 import { ClockIcon } from "../ui/icons";
 
@@ -37,7 +38,7 @@ export function DateTimeRender({ value, config = {} }: DateTimeRenderProps) {
 
 		return (
 			<Centered>
-				<span className="inline-flex items-center gap-2 px-2 py-1 bg-blue-50 text-blue-700 text-sm rounded-md border border-blue-200 transition-colors duration-200 hover:bg-blue-100">
+				<span className={`${VALUE_TYPE_CONTAINER} gap-2 bg-blue-50 text-blue-700 text-sm border-blue-200 hover:bg-blue-100`}>
 					<ClockIcon className="w-3.5 h-3.5 text-blue-500" title="日期时间" />
 					<span className="font-mono text-xs tabular-nums">{formatted}</span>
 				</span>

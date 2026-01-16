@@ -4,6 +4,7 @@
  */
 
 import type { TagConfig } from "../../types/valueType";
+import { VALUE_TYPE_CONTAINER } from "../../styles/constants";
 import { EmptyState, Centered } from "../ui";
 import { TagIcon } from "../ui/icons";
 
@@ -26,7 +27,7 @@ export function TagRender({ value, config = {} }: TagRenderProps) {
 	return (
 		<Centered>
 			<span
-				className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-transparent transition-all duration-200 cursor-default hover:scale-105 ${colorClass}`}
+				className={`${VALUE_TYPE_CONTAINER} text-xs font-medium border-transparent hover:scale-105 ${colorClass}`}
 			>
 				<TagIcon className="w-3 h-3 opacity-70" />
 				<span>{valueStr}</span>

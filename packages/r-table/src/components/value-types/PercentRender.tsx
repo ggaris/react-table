@@ -13,7 +13,13 @@ interface PercentRenderProps {
 }
 
 export function PercentRender({ value, config = {} }: PercentRenderProps) {
-	const { precision = 2, showSymbol = true, showProgressBar = false } = config;
+	const {
+		precision = 2,
+		showSymbol = true,
+		showProgressBar = false,
+		reverseColor = false,
+		colorThresholds
+	} = config;
 
 	// 处理空值
 	if (value === null || value === undefined) {
@@ -28,7 +34,35 @@ export function PercentRender({ value, config = {} }: PercentRenderProps) {
 
 	const percentage = num * 100;
 	const formatted = percentage.toFixed(precision);
-	const { text: textColor, bg: bgColor } = getPercentageBgColor(percentage);
+
+	// 获取颜色配置
+	let textColor: string;
+	let bgColor: string;
+
+	if (colorThresholds && colorThresholds.length > 0) {
+		// 使用自定义颜色阈值
+		const sorted = [...colorThresholds].sort((a, b) => b.threshold - a.threshold);
+		const match = sorted.find(t => percentage >= t.threshold);
+		if (match) {
+			textColor = match.textColor;
+			bgColor = match.bgColor;
+		} else if (sorted.length > 0) {
+			// 如果没有匹配，使用最后一个（最低阈值）
+			const last = sorted[sorted.length - 1]!;
+			textColor = last.textColor;
+			bgColor = last.bgColor;
+		} else {
+			// 降级到默认颜色
+			const colors = getPercentageBgColor(percentage, reverseColor);
+			textColor = colors.text;
+			bgColor = colors.bg;
+		}
+	} else {
+		// 使用默认颜色或反转颜色
+		const colors = getPercentageBgColor(percentage, reverseColor);
+		textColor = colors.text;
+		bgColor = colors.bg;
+	}
 
 	// 进度条模式
 	if (showProgressBar) {

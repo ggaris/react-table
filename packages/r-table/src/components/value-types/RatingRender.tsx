@@ -3,8 +3,9 @@
  * 支持半星和自定义颜色
  */
 
+import { VALUE_TYPE_PADDING } from "../../styles/constants";
 import type { RatingConfig } from "../../types/valueType";
-import { EmptyState, ErrorBadge, Centered } from "../ui";
+import { Centered, EmptyState, ErrorBadge } from "../ui";
 
 interface RatingRenderProps {
 	value: unknown;
@@ -12,7 +13,8 @@ interface RatingRenderProps {
 }
 
 // 星星 SVG 路径
-const STAR_PATH = "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.995.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z";
+const STAR_PATH =
+	"M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.995.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z";
 
 // 星星组件
 interface StarProps {
@@ -77,7 +79,7 @@ export function RatingRender({ value, config = {} }: RatingRenderProps) {
 
 	return (
 		<Centered>
-			<div className="inline-flex items-center gap-2">
+			<div className={`inline-flex items-center gap-2 ${VALUE_TYPE_PADDING}`}>
 				{/* 星星容器 */}
 				<div className="inline-flex items-center gap-0.5">
 					{/* 填充星星 */}
@@ -86,13 +88,16 @@ export function RatingRender({ value, config = {} }: RatingRenderProps) {
 					))}
 
 					{/* 半星 */}
-					{hasHalfStar && (
-						<Star type="half" color={color} index={fullStars} />
-					)}
+					{hasHalfStar && <Star type="half" color={color} index={fullStars} />}
 
 					{/* 空星星 */}
 					{Array.from({ length: emptyStars }).map((_, i) => (
-						<Star key={`empty-${i}`} type="empty" color={color} index={fullStars + (hasHalfStar ? 1 : 0) + i} />
+						<Star
+							key={`empty-${i}`}
+							type="empty"
+							color={color}
+							index={fullStars + (hasHalfStar ? 1 : 0) + i}
+						/>
 					))}
 				</div>
 

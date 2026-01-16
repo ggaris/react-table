@@ -4,6 +4,7 @@
  */
 
 import type { TimeConfig } from "../../types/valueType";
+import { VALUE_TYPE_CONTAINER } from "../../styles/constants";
 import { EmptyState, ErrorBadge, Centered } from "../ui";
 import { ClockIcon } from "../ui/icons";
 
@@ -34,7 +35,7 @@ export function TimeRender({ value, config = {} }: TimeRenderProps) {
 
 		return (
 			<Centered>
-				<span className="inline-flex items-center gap-2 px-2 py-1 bg-indigo-50 text-indigo-700 text-sm rounded-md border border-indigo-200 transition-colors duration-200 hover:bg-indigo-100">
+				<span className={`${VALUE_TYPE_CONTAINER} gap-2 bg-indigo-50 text-indigo-700 text-sm border-indigo-200 hover:bg-indigo-100`}>
 					<ClockIcon className="w-3.5 h-3.5 text-indigo-500" />
 					<span className="font-mono text-xs tabular-nums">{formatted}</span>
 				</span>

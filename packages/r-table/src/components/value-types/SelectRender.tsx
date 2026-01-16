@@ -4,7 +4,7 @@
  */
 
 import type { SelectConfig } from "../../types/valueType";
-import { STATUS_BADGE_STYLES } from "../../styles/constants";
+import { STATUS_BADGE_STYLES, VALUE_TYPE_CONTAINER } from "../../styles/constants";
 import { EmptyState, Centered } from "../ui";
 import {
 	SuccessCircleIcon,
@@ -42,7 +42,7 @@ export function SelectRender({ value, config = {} }: SelectRenderProps) {
 	if (!enumConfig) {
 		return (
 			<Centered>
-				<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-md border border-slate-200">
+				<span className={`${VALUE_TYPE_CONTAINER} bg-slate-100 text-slate-700 text-xs font-medium border-slate-200`}>
 					{String(value)}
 				</span>
 			</Centered>
@@ -58,7 +58,7 @@ export function SelectRender({ value, config = {} }: SelectRenderProps) {
 	return (
 		<Centered>
 			<span
-				className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-md border transition-all duration-200 cursor-default ${containerClass}`}
+				className={`${VALUE_TYPE_CONTAINER} text-xs font-semibold cursor-default ${containerClass}`}
 			>
 				<Icon className={`w-3.5 h-3.5 ${iconClass}`} title={enumConfig.text} />
 				<span>{enumConfig.text}</span>
