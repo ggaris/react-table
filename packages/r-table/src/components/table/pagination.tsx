@@ -168,8 +168,8 @@ function PaginationButtonGroup({
 }
 
 /**
- * 页码跳转组件（核心改进）
- * 使用本地状态管理输入值，仅在提交时触发跳转
+ * 页码跳转组件
+ * 使用本地状态管理输入值，支持按钮点击、回车键跳转
  */
 function PageJumper({
 	currentPage,
@@ -184,15 +184,15 @@ function PageJumper({
 	const handleJump = React.useCallback(() => {
 		const page = Number(inputValue);
 
-		// 更严格的数字验证：排除NaN、小数、负数
+		// 严格的数字验证：排除NaN、小数、负数
 		const isValidNumber = !Number.isNaN(page) && Number.isInteger(page) && page > 0;
 
-		// 验证输入：必须是有效整数且在范围内（允许跳转到当前页）
+		// 验证输入：必须是有效整数且在范围内
 		if (isValidNumber && page >= 1 && page <= totalPages) {
-			onJump(page); // ✅ 仅在此处触发一次
-			setInputValue(""); // 清空输入框
+			onJump(page);
+			setInputValue(""); // 跳转成功后清空输入框
 		} else if (inputValue !== "") {
-			// 无效输入，清空输入框（视觉反馈）
+			// 无效输入时清空输入框（视觉反馈）
 			setInputValue("");
 		}
 	}, [inputValue, totalPages, onJump]);
@@ -208,14 +208,6 @@ function PageJumper({
 		},
 		[handleJump],
 	);
-
-	// 失焦时，如果输入为空，不做处理（placeholder 会显示当前页码）
-	const handleBlur = React.useCallback(() => {
-		// 失焦时不做自动跳转，仅清空输入
-		if (inputValue !== "") {
-			setInputValue("");
-		}
-	}, [inputValue]);
 
 	// 跳转按钮是否禁用
 	const isJumpDisabled = React.useMemo(() => {
@@ -243,7 +235,6 @@ function PageJumper({
 					}
 				}}
 				onKeyDown={handleKeyDown}
-				onBlur={handleBlur}
 				placeholder={String(currentPage)}
 				disabled={loading}
 				className={PAGINATION_INPUT}
@@ -252,7 +243,11 @@ function PageJumper({
 			<span className="text-sm text-gray-600 hidden sm:inline">页</span>
 			<button
 				type="button"
-				onClick={handleJump}
+				onMouseDown={(e) => {
+					// 阻止输入框失焦，确保跳转逻辑能正确执行
+					e.preventDefault();
+					handleJump();
+				}}
 				disabled={isJumpDisabled}
 				className={PAGINATION_JUMP_BUTTON}
 				aria-label="跳转"
