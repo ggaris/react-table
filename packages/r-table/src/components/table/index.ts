@@ -4,6 +4,7 @@ export { Checkbox } from "./checkbox";
 export { ColumnFilter } from "./column-filter";
 export { ColumnHeader } from "./column-header";
 export { ColumnVisibility } from "./column-visibility";
+export { Pagination, type PaginationProps } from "./pagination";
 export {
 	DataTable,
 	type DataTableProps,

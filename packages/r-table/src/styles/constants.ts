@@ -333,3 +333,32 @@ export function getProgressGradient(
 		};
 	return { gradient: "from-red-500 to-red-400", text: "text-red-600" };
 }
+
+// ========== 分页器样式常量 ==========
+
+/** 分页器容器 */
+export const PAGINATION_CONTAINER = "flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm";
+
+/** 分页器信息区 */
+export const PAGINATION_INFO = "flex flex-wrap items-center gap-3 text-sm";
+
+/** 分页器控制区 */
+export const PAGINATION_CONTROLS = "flex flex-wrap items-center gap-2 w-full lg:w-auto";
+
+/** 分页按钮组 */
+export const PAGINATION_BUTTON_GROUP = "flex items-center gap-1";
+
+/** 页码显示 */
+export const PAGINATION_PAGE_DISPLAY = "px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-md min-w-25 text-center";
+
+/** 跳转按钮（CTA 样式） */
+export const PAGINATION_JUMP_BUTTON = `px-3 py-2 text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 rounded-md disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${TRANSITION_BASE} ${FOCUS_RING} focus:ring-orange-500`;
+
+/** 页码输入框 */
+export const PAGINATION_INPUT = `w-16 px-2 py-1.5 text-sm text-left border border-gray-300 rounded-md ${TRANSITION_BASE} ${FOCUS_RING} focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed`;
+
+/** 每页条数选择器 */
+export const PAGINATION_SELECT = `px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 cursor-pointer ${TRANSITION_BASE} ${FOCUS_RING} focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60`;
+
+/** 已选择项徽章 */
+export const SELECTED_BADGE = "inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md font-medium";

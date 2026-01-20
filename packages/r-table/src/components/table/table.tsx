@@ -20,7 +20,6 @@ import {
 	FOCUS_RING,
 	getAlignClass,
 	getRowBgClasses,
-	PAGINATION_BUTTON,
 	ROW_BG_COLORS,
 	TABLE_CONTAINER,
 	TRANSITION_BASE,
@@ -31,15 +30,12 @@ import { processValueTypeColumns } from "../../utils/valueType";
 import {
 	CheckIcon,
 	DocumentIcon,
-	FirstPageIcon,
-	LastPageIcon,
-	NextPageIcon,
-	PrevPageIcon,
 	SortAscIcon,
 	SortDescIcon,
 	SortIcon,
 } from "../ui/icons";
 import { Checkbox } from "./checkbox";
+import { Pagination } from "./pagination";
 import { useTableConfig } from "./table-context";
 import { TableSkeleton } from "./table-skeleton";
 import { type DensityType, ToolBar } from "./toolbar";
@@ -163,27 +159,6 @@ function SortIndicator({ isSorted, canSort }: SortIndicatorProps) {
 			{isSorted === "desc" && <SortDescIcon />}
 			{!isSorted && <SortIcon />}
 		</span>
-	);
-}
-
-// 分页按钮组件
-interface PaginationButtonProps
-	extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-	icon: React.ReactNode;
-	label: string;
-}
-
-function PaginationButton({ icon, label, ...props }: PaginationButtonProps) {
-	return (
-		<button
-			type="button"
-			className={PAGINATION_BUTTON}
-			title={label}
-			aria-label={label}
-			{...props}
-		>
-			{icon}
-		</button>
 	);
 }
 
@@ -773,105 +748,13 @@ function DataTableInner<TData>(
 
 			{/* 分页控件 */}
 			{finalEnablePagination && (data.length > 0 || loading) && (
-				<div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 px-4 py-3 bg-white border border-gray-200 rounded-lg shadow-sm">
-					{/* 信息显示 */}
-					<div className="flex flex-wrap items-center gap-3 text-sm">
-						<span className="text-gray-600">
-							共 <span className="font-semibold text-gray-900">{total}</span>{" "}
-							条数据
-						</span>
-						{Object.keys(rowSelection).length > 0 && (
-							<span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md font-medium">
-								<CheckIcon className="w-4 h-4" aria-hidden="true" />
-								已选 {Object.keys(rowSelection).length} 条
-							</span>
-						)}
-					</div>
-
-					{/* 分页控制 */}
-					<div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-						{/* 分页按钮组 */}
-						<div className="flex items-center gap-1 order-1">
-							<PaginationButton
-								icon={<FirstPageIcon />}
-								label="第一页"
-								onClick={() => table.setPageIndex(0)}
-								disabled={loading || !table.getCanPreviousPage()}
-							/>
-							<PaginationButton
-								icon={<PrevPageIcon />}
-								label="上一页"
-								onClick={() => table.previousPage()}
-								disabled={loading || !table.getCanPreviousPage()}
-							/>
-
-							{/* 页码显示 */}
-							<span className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-md min-w-25 text-center">
-								{table.getState().pagination.pageIndex + 1} /{" "}
-								{table.getPageCount()}
-							</span>
-
-							<PaginationButton
-								icon={<NextPageIcon />}
-								label="下一页"
-								onClick={() => table.nextPage()}
-								disabled={loading || !table.getCanNextPage()}
-							/>
-							<PaginationButton
-								icon={<LastPageIcon />}
-								label="最后一页"
-								onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-								disabled={loading || !table.getCanNextPage()}
-							/>
-						</div>
-
-						{/* 跳转页码 */}
-						<div className="flex items-center gap-1.5 text-sm order-2 lg:order-3">
-							<span className="text-gray-600 hidden sm:inline">跳至</span>
-							<input
-								type="number"
-								min="1"
-								max={table.getPageCount()}
-								defaultValue={table.getState().pagination.pageIndex + 1}
-								disabled={loading}
-								onChange={(e) => {
-									const page = e.target.value ? Number(e.target.value) - 1 : 0;
-									table.setPageIndex(page);
-								}}
-								className={cn(
-									"w-16 px-2 py-1.5 text-sm text-center border border-gray-300 rounded-md",
-									TRANSITION_BASE,
-									FOCUS_RING,
-									"focus:border-transparent",
-									"disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed",
-								)}
-								aria-label="跳转到指定页码"
-							/>
-							<span className="text-gray-600 hidden sm:inline">页</span>
-						</div>
-
-						{/* 每页条数 */}
-						<select
-							value={table.getState().pagination.pageSize}
-							onChange={(e) => table.setPageSize(Number(e.target.value))}
-							disabled={loading}
-							className={cn(
-								"px-3 py-1.5 text-sm border border-gray-300 rounded-md bg-white hover:bg-gray-50 cursor-pointer order-3 lg:order-2",
-								TRANSITION_BASE,
-								FOCUS_RING,
-								"focus:border-transparent",
-								"disabled:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60",
-							)}
-							aria-label="选择每页显示条数"
-						>
-							{finalPageSizeOptions.map((pageSize) => (
-								<option key={pageSize} value={pageSize}>
-									{pageSize} 条/页
-								</option>
-							))}
-						</select>
-					</div>
-				</div>
+				<Pagination
+					table={table}
+					total={total}
+					selectedCount={Object.keys(rowSelection).length}
+					loading={loading}
+					pageSizeOptions={finalPageSizeOptions}
+				/>
 			)}
 		</div>
 	);
